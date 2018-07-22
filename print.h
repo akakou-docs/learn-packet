@@ -2,4 +2,4 @@
 
 void PrintPacket(Packet *packet);
 
-void PrintEthernet(Packet *packet);
+void PrintRawPacket(RawPacket *raw_packet);

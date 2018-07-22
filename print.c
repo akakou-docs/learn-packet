@@ -5,14 +5,14 @@
  * @brief パケットのバイナリを表示
  * @param (packet) パケット
  */
-void PrintPacket(Packet *packet){
+void PrintRawPacket(RawPacket *raw_packet){
     int count = 0;
 
     // 残りポインタ
-    unsigned char *buf = packet -> buf;
+    unsigned char *buf = raw_packet -> buf;
 
     // 残りのサイズ
-    int lest = packet -> size;
+    int lest = raw_packet -> size;
     printf("size:%d\n\n", lest);
 
     // バイナリを表示する
@@ -41,7 +41,7 @@ void PrintEthernet(Packet *packet){
 
     char mac[19];
 
-    printf("destionation : %s\n", my_ether_ntoa_r(packet -> eh -> ether_dhost, mac, sizeof(mac)));
-    printf("source       : %s\n", my_ether_ntoa_r(packet -> eh -> ether_shost, mac, sizeof(mac)));
+    printf("destionation : %s\n", ether_to_str(packet -> eh -> ether_dhost, mac, sizeof(mac)));
+    printf("source       : %s\n", ether_to_str(packet -> eh -> ether_shost, mac, sizeof(mac)));
     printf("type         : %d\n\n", packet -> eh -> ether_type);
 }

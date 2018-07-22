@@ -6,12 +6,12 @@
  * @param (buf) ソケットから受け取ったバッファ
  * @param (size) バッファの読み込むサイズ
  */
-int ReadEthernet(Packet *packet, char *buf, int size){
+int ReadEthernet(Packet *packet, RawPacket *raw_packet){
     // 残りポインタ
-    unsigned char *ptr = buf;
+    unsigned char *ptr = raw_packet -> buf;
 
     // 残りのサイズ
-    int lest = size;
+    int lest = raw_packet -> size;
 
     if(lest < sizeof(struct ether_header)) {
         // デバッグしてデバイスナンバートサイズを表示
@@ -23,7 +23,7 @@ int ReadEthernet(Packet *packet, char *buf, int size){
     packet -> eh = (struct ether_header *)ptr;
 
     // バッファのポインタをコピー
-    packet -> buf = buf;
+    raw_packet -> buf = ptr;
 
     // ポインタを読んだ分まで加算
     ptr += sizeof(struct ether_header);
@@ -32,4 +32,14 @@ int ReadEthernet(Packet *packet, char *buf, int size){
     lest -= sizeof(struct ether_header);
 
     return 0;
+}
+
+/**
+ * @brief イーサネットパケットの読み込み
+ * @param (packet) パケットの構造体
+ * @param (buf) ソケットから受け取ったバッファ
+ * @param (size) バッファの読み込むサイズ
+ */
+Packet *WriteRawPacket(RawPacket *raw_packet, Packet *packet){
+    
 }
