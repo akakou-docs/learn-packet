@@ -72,24 +72,3 @@ int InitRawSocket(char *device) {
 
     return soc;
 }
-
-/**
- * @brief MACアドレスを文字列に変換
- * @param (hwaddr) MACアドレスのポインタ
- * @param (buf) 出力先
- * @param (size) 書き込むサイズ
- * @return (buf) 文字列として出力されるMACアドレス
- */
-char *ether_to_str(uint8_t *binary, char *string, socklen_t size){
-    snprintf(string, size, "%02x:%02x:%02x:%02x:%02x:%02x",
-        binary[0], binary[1], binary[2], binary[3], binary[4], binary[5]);
-
-    return string;
-}
-
-uint8_t *str_to_ether(char *string, uint8_t *binary){
-    sscanf(string, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-        &binary[0], &binary[1], &binary[2], &binary[3], &binary[4], &binary[5]);
-
-    return binary;
-}

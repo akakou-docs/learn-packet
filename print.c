@@ -39,9 +39,29 @@ void PrintRawPacket(RawPacket *raw_packet){
 void PrintEthernet(Packet *packet){
     int count = 0;
 
-    char mac[19];
+    char dhost[19];
+    char shost[19];
 
-    printf("destionation : %s\n", ether_to_str(packet -> eh -> ether_dhost, mac, sizeof(mac)));
-    printf("source       : %s\n", ether_to_str(packet -> eh -> ether_shost, mac, sizeof(mac)));
+    snprintf(dhost, sizeof(dhost), "%02x:%02x:%02x:%02x:%02x:%02x",
+        packet -> eh -> ether_dhost[0],
+        packet -> eh -> ether_dhost[1],
+        packet -> eh -> ether_dhost[2],
+        packet -> eh -> ether_dhost[3],
+        packet -> eh -> ether_dhost[4],
+        packet -> eh -> ether_dhost[5]
+    );
+
+    snprintf(shost, sizeof(shost), "%02x:%02x:%02x:%02x:%02x:%02x",
+        packet -> eh -> ether_shost[0],
+        packet -> eh -> ether_shost[1],
+        packet -> eh -> ether_shost[2],
+        packet -> eh -> ether_shost[3],
+        packet -> eh -> ether_shost[4],
+        packet -> eh -> ether_shost[5]
+    );
+
+
+    printf("destionation : %s\n", dhost);
+    printf("source       : %s\n", shost);
     printf("type         : %d\n\n", packet -> eh -> ether_type);
 }

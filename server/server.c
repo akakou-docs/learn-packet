@@ -28,7 +28,7 @@ int Serv(int soc){
     raw_packet.size = sizeof(buf);
 
     // パケットを構造体に当てはめる
-    ReadEthernet(&packet, &raw_packet);
+    AnalyzeEtherPacket(&packet, &raw_packet);
 
     // 表示
     PrintEthernet(&packet);

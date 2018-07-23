@@ -12,26 +12,31 @@
  */
 int Send(int soc){
     // 変数の宣言
-    Packet packet;
     int size;
     unsigned char buf[100];
 
-    // パケットの宣言
-    union {
-        char buf[sizeof(struct ether_header)];
-        struct ether_header hdr;
-    } eth_hdr;
+    struct ether_header eh;
+
+	RawPacket raw_packet = {
+        buf,
+        sizeof(buf)
+    };
+
+    Packet packet = {
+        &(eh)
+    };
 
     // パケットの初期化
-    packet.eh = &eth_hdr.hdr;
+    sprintf(packet.eh -> ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
+    sprintf(packet.eh -> ether_shost, "\x64\x80\x99\x4f\x20\xf4");
+    packet.eh -> ether_type = (u_int16_t)8;
 
-    str_to_ether("64:80:99:4f:20:f4", packet.eh -> ether_dhost);
-    str_to_ether("64:80:99:4f:20:f4", packet.eh -> ether_shost);
+    PrintEthernet(&packet);
 
-    packet.eh -> ether_type = 8;
+    GenerateRawEtherPacket(&raw_packet, &packet);
 
     // パケットの読み込み
-    if((size = write(soc, eth_hdr.buf, sizeof(buf))) <= 0){
+    if((size = write(soc, raw_packet.buf, raw_packet.size)) <= 0){
         // 失敗したらエラーを開く
         perror("write");
         return -1;
@@ -64,9 +69,10 @@ int main(int argc, char *argv[], char *envp[]){
     }
 
     // 無限に実行
-    //while(1){
+    while(1){
         Send(soc);
-    //}
+        sleep(5);
+    }
 
     // ソケットを閉じる
     close(soc);

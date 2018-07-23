@@ -53,3 +53,4 @@ dkms.conf
 
 client/client
 server/server
+peda-session*

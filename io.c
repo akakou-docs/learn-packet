@@ -1,12 +1,12 @@
 #include "netutils.h"
 
 /**
- * @brief イーサネットパケットの読み込み
+ * @brief イーサネットパケットの解析
  * @param (oacket) パケットの構造体
  * @param (buf) ソケットから受け取ったバッファ
  * @param (size) バッファの読み込むサイズ
  */
-int ReadEthernet(Packet *packet, RawPacket *raw_packet){
+int AnalyzeEtherPacket(Packet *packet, RawPacket *raw_packet){
     // 残りポインタ
     unsigned char *ptr = raw_packet -> buf;
 
@@ -35,11 +35,27 @@ int ReadEthernet(Packet *packet, RawPacket *raw_packet){
 }
 
 /**
+ * @brief イーサネットパケットの生成
+ * @param (packet) パケットの構造体
+ * @param (buf) ソケットから受け取ったバッファ
+ * @param (size) バッファの読み込むサイズ
+ */
+RawPacket *GenerateRawEtherPacket(RawPacket *raw_packet, Packet *packet){
+    memcpy(raw_packet -> buf, packet -> eh, raw_packet -> size);
+
+    return raw_packet;
+}
+
+
+/**
  * @brief イーサネットパケットの読み込み
  * @param (packet) パケットの構造体
  * @param (buf) ソケットから受け取ったバッファ
  * @param (size) バッファの読み込むサイズ
  */
-Packet *WriteRawPacket(RawPacket *raw_packet, Packet *packet){
-    
+RawPacket *WriteRawPacket(RawPacket *raw_packet, Packet *packet){
+    memcpy(raw_packet -> buf, packet -> eh, raw_packet -> size);
+
+    return raw_packet;
 }
+
