@@ -127,17 +127,24 @@ int AnalyzePacket(Packet *packet){
 }
 
 /**
- * @brief イーサネットパケットの生成
- * @param (lest_packet) パケットのバイナリデータを持つ構造体
+ * @brief bufの生成
  * @param (packet) パケットの構造体
  */
 void GeneratePacketBuffer(Packet *packet){
-    size_t size = sizeof(struct ether_header);
-    unsigned char *buf = (unsigned char *)malloc(size);
-    
-    memcpy(buf, packet -> eh, size);
-    
-    packet -> ptr = buf;
+    // パケット全体のサイズ
+    size_t size = sizeof(struct ether_header) + sizeof(struct iphdr);
     packet -> size = size;
+
+    // イーサネットヘッダのコピー 
+    unsigned char *buf = (unsigned char *)malloc(size);
+    packet -> ptr = buf;
+    memcpy(buf, packet -> eh, sizeof(struct ether_header));
+    packet -> eh = (struct ether_header *)buf;
+
+    // IPヘッダのコピー
+    buf += sizeof(struct ether_header);
+    memcpy(buf, packet -> ip, sizeof(struct iphdr));
+    packet -> ip = (struct iphdr *)buf;
+    
 }
 

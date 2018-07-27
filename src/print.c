@@ -114,27 +114,16 @@ void PrintEthernet(Packet *packet){
 }
 
 void PrintIP(Packet *packet){
-    char saddr[12];
-    char daddr[12];
+    char saddr[15];
+    char daddr[15];
 
-    sprintf(saddr, "%d.%d.%d.%d", 
-        (packet -> ip -> saddr)&0xFF,
-        (packet -> ip -> saddr >> 8)&0xFF,
-        (packet -> ip -> saddr >> 16)&0xFF,
-        (packet -> ip -> saddr >> 24)&0xFF
-    );
-
-    sprintf(daddr, "%d.%d.%d.%d", 
-        (packet -> ip -> daddr)&0xFF,
-        (packet -> ip -> daddr >> 8)&0xFF,
-        (packet -> ip -> daddr >> 16)&0xFF,
-        (packet -> ip -> daddr >> 24)&0xFF
-    );
+    inet_ntop(AF_INET, &(packet -> ip -> saddr), saddr, sizeof(saddr));
+    inet_ntop(AF_INET, &(packet -> ip -> daddr), daddr, sizeof(daddr));
 
     printf("-*-*-*-*-    IP    -*-*-*-*-\n");
     printf("version          : %d\n", packet -> ip -> version);
     printf("IP header length : %d\n", packet -> ip -> ihl);
-    printf("type of service  : %d\n", packet -> ip -> tos);
+    printf("type of service  : %"PRId8"\n", packet -> ip -> tos);
     printf("total length     : %d\n", packet -> ip -> tot_len);
     printf("identification   : %d\n", packet -> ip -> id);
     printf("frag offset      : %d\n", packet -> ip -> frag_off);
