@@ -13,34 +13,29 @@
 int Send(int soc){
     // 変数の宣言
     int size;
-    unsigned char buf[100];
-
     struct ether_header eh;
 
-	RawPacket raw_packet = {
-        buf,
-        sizeof(buf)
-    };
-
-    Packet packet = {
-        &(eh)
-    };
+    Packet packet;
+    packet.eh = &eh;
 
     // パケットの初期化
     sprintf(packet.eh -> ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
     sprintf(packet.eh -> ether_shost, "\x64\x80\x99\x4f\x20\xf4");
     packet.eh -> ether_type = (u_int16_t)8;
 
-    PrintEthernet(&packet);
+    GeneratePacketBuffer(&packet);
 
-    GenerateRawEtherPacket(&raw_packet, &packet);
+    PrintEthernet(&packet);
+    PrintRawPacket(&packet);
 
     // パケットの読み込み
-    if((size = write(soc, raw_packet.buf, raw_packet.size)) <= 0){
+    if((size = write(soc, packet.ptr, packet.size)) <= 0){
         // 失敗したらエラーを開く
         perror("write");
         return -1;
     }
+
+    free(packet.ptr);
 
     return 0;
 }

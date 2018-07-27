@@ -2,24 +2,20 @@
 
 
 /**
- * @brief パケットのバイナリを表示
- * @param (packet) パケット
+ * @brief バイナリを表示
+ * @param (raw_packet) パケット
  */
-void PrintRawPacket(RawPacket *raw_packet){
+
+void PrintBinary(RawPacket raw_packet) {
     int count = 0;
-
-    // 残りポインタ
-    unsigned char *buf = raw_packet -> buf;
-
-    // 残りのサイズ
-    int lest = raw_packet -> size;
-    printf("size:%d\n\n", lest);
+    
+    printf("size:%d\n\n", raw_packet.lest);
 
     // バイナリを表示する
-    while (0 <= lest) {
-        printf("%2x ", *buf);
-        buf += sizeof(unsigned char);
-        lest -= sizeof(unsigned char);
+    while (0 < raw_packet.lest) {
+        printf("%02x ", *(raw_packet.buf));
+        raw_packet.buf += sizeof(unsigned char);
+        raw_packet.lest -= sizeof(unsigned char);
         count ++;
 
         if (count % 5 == 0) {
@@ -30,6 +26,57 @@ void PrintRawPacket(RawPacket *raw_packet){
     }
 
     puts("\n");
+}
+
+/**
+ * @brief パケットのバイナリを表示
+ * @param (packet) パケット
+ */
+void PrintRawPacket(Packet *packet){
+    int count = 0;
+
+    RawPacket raw_packet = {
+        packet -> ptr,
+        packet -> size
+    };
+
+    printf("-*-*-*-*-  Raw Packet  -*-*-*-*-\n");
+
+    PrintBinary(raw_packet);
+}
+
+/**
+ * @brief パケットのバイナリを表示
+ * @param (packet) パケット
+ */
+void PrintRawEthernet(Packet *packet){
+    int count = 0;
+
+    RawPacket raw_packet = {
+        (unsigned char *)packet -> eh,
+        sizeof(struct ether_header)
+    };
+
+    printf("-*-*-*-*- Raw Ethernet -*-*-*-*-\n");
+
+    PrintBinary(raw_packet);
+}
+
+/**
+ * @brief パケットのバイナリを表示
+ * @param (packet) パケット
+ */
+void PrintRawIP(Packet *packet){
+    int count = 0;
+
+    RawPacket raw_packet = {
+        (unsigned char *)packet -> ip,
+        sizeof(struct iphdr)
+    };
+
+    printf("-*-*-*-*-    Raw IP    -*-*-*-*-\n");
+
+    PrintBinary(raw_packet);
 }
 
 /**
@@ -60,8 +107,40 @@ void PrintEthernet(Packet *packet){
         packet -> eh -> ether_shost[5]
     );
 
-
+    printf("-*-*-*-*- Ethernet -*-*-*-*-\n");
     printf("destionation : %s\n", dhost);
     printf("source       : %s\n", shost);
     printf("type         : %d\n\n", packet -> eh -> ether_type);
+}
+
+void PrintIP(Packet *packet){
+    char saddr[12];
+    char daddr[12];
+
+    sprintf(saddr, "%d.%d.%d.%d", 
+        (packet -> ip -> saddr)&0xFF,
+        (packet -> ip -> saddr >> 8)&0xFF,
+        (packet -> ip -> saddr >> 16)&0xFF,
+        (packet -> ip -> saddr >> 24)&0xFF
+    );
+
+    sprintf(daddr, "%d.%d.%d.%d", 
+        (packet -> ip -> daddr)&0xFF,
+        (packet -> ip -> daddr >> 8)&0xFF,
+        (packet -> ip -> daddr >> 16)&0xFF,
+        (packet -> ip -> daddr >> 24)&0xFF
+    );
+
+    printf("-*-*-*-*-    IP    -*-*-*-*-\n");
+    printf("version          : %d\n", packet -> ip -> version);
+    printf("IP header length : %d\n", packet -> ip -> ihl);
+    printf("type of service  : %d\n", packet -> ip -> tos);
+    printf("total length     : %d\n", packet -> ip -> tot_len);
+    printf("identification   : %d\n", packet -> ip -> id);
+    printf("frag offset      : %d\n", packet -> ip -> frag_off);
+    printf("time to live     : %d\n", packet -> ip -> ttl);
+    printf("protocol         : %d\n", packet -> ip -> protocol);
+    printf("checksum         : %d\n", packet -> ip -> check);
+    printf("destionation     : %s\n", daddr);
+    printf("source           : %s\n\n", saddr);
 }

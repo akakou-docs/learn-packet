@@ -53,5 +53,7 @@ dkms.conf
 
 client
 server
-peda-session*
+peda-session-client.txt
+peda-session-server.txt
+
 .vscode

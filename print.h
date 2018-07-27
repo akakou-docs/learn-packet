@@ -1,5 +1,4 @@
 #include "print.c"
 
-void PrintPacket(Packet *packet);
-
-void PrintRawPacket(RawPacket *raw_packet);
+void PrintRawPacket(Packet *packet);
+void PrintRawPacket(Packet *packet);

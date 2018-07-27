@@ -13,25 +13,24 @@
 int Serv(int soc){
     // 変数の宣言
     Packet packet;
-    RawPacket raw_packet;
-    int size;
     unsigned char buf[2048];
 
     // パケットの読み込み
-    if((size = read(soc, buf, sizeof(buf))) <= 0){
+    if((packet.size = read(soc, buf, sizeof(buf))) <= 0){
         // 失敗したらエラーを開く
         perror("read");
         return -1;
     }
 
-    raw_packet.buf = buf;
-    raw_packet.size = sizeof(buf);
+    packet.ptr = buf;
 
     // パケットを構造体に当てはめる
-    AnalyzeEtherPacket(&packet, &raw_packet);
+    AnalyzePacket(&packet);
 
     // 表示
     PrintEthernet(&packet);
+    PrintRawEthernet(&packet);
+        
     return 0;
 }
 
