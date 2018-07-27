@@ -51,8 +51,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-client
-server
 peda-session-client.txt
 peda-session-server.txt
 
