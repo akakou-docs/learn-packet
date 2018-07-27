@@ -1,9 +1,10 @@
 CC              = gcc
 OBJS            = server.o
 PROGRAM         = server
+CFLAGS          = -g
 
-all:            $(OBJS)
-	$(CC) -g $(OBJS) $(LDFLAGS) -o $(PROGRAM)
+build:          $(OBJS)
+	$(CC) $(OBJS) $(LDFLAGS) -o $(PROGRAM)
 
 clean:;         rm -f *.o *~ $(PROGRAM)
 
