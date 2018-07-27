@@ -51,6 +51,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-client/client
-server/server
+client
+server
 peda-session*
+.vscode
