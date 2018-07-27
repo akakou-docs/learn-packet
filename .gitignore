@@ -51,6 +51,12 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+src/client/ip/client
+src/client/ethernet/client
+
+src/server/ip/client
+src/server/ethernet/client
+
 peda-session-client.txt
 peda-session-server.txt
 
