@@ -1,2 +1,3 @@
-# introduction-to-communication
-Ethernet層から学ぶ通信入門
+# L2-HTTP
+
+L2から頑張ってHTTPサーバを立てるぜ！
