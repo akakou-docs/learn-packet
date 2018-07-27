@@ -2,9 +2,8 @@
 
 /**
  * @brief イーサネットパケットの解析
- * @param (oacket) パケットの構造体
- * @param (buf) ソケットから受け取ったバッファ
- * @param (size) バッファの読み込むサイズ
+ * @param (packet) パケットの構造体
+ * @param (raw_packet) パケットのバイナリデータを持つ構造体
  */
 int AnalyzeEtherPacket(Packet *packet, RawPacket *raw_packet){
     // 残りポインタ
@@ -36,24 +35,10 @@ int AnalyzeEtherPacket(Packet *packet, RawPacket *raw_packet){
 
 /**
  * @brief イーサネットパケットの生成
+ * @param (raw_packet) パケットのバイナリデータを持つ構造体
  * @param (packet) パケットの構造体
- * @param (buf) ソケットから受け取ったバッファ
- * @param (size) バッファの読み込むサイズ
  */
 RawPacket *GenerateRawEtherPacket(RawPacket *raw_packet, Packet *packet){
-    memcpy(raw_packet -> buf, packet -> eh, raw_packet -> size);
-
-    return raw_packet;
-}
-
-
-/**
- * @brief イーサネットパケットの読み込み
- * @param (packet) パケットの構造体
- * @param (buf) ソケットから受け取ったバッファ
- * @param (size) バッファの読み込むサイズ
- */
-RawPacket *WriteRawPacket(RawPacket *raw_packet, Packet *packet){
     memcpy(raw_packet -> buf, packet -> eh, raw_packet -> size);
 
     return raw_packet;
