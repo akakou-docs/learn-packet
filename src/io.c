@@ -201,20 +201,31 @@ int AnalyzePacket(Packet *packet){
  * @param (packet) パケットの構造体
  */
 void GeneratePacketBuffer(Packet *packet){
-    // パケット全体のサイズ
-    size_t size = sizeof(struct ether_header) + sizeof(struct iphdr);
-    packet -> size = size;
-
     // イーサネットヘッダのコピー 
-    unsigned char *buf = (unsigned char *)malloc(size);
+    unsigned char *buf = (unsigned char *)malloc(packet -> size);
     packet -> ptr = buf;
+
     memcpy(buf, packet -> eh, sizeof(struct ether_header));
     packet -> eh = (struct ether_header *)buf;
+    buf += sizeof(struct ether_header);
 
     // IPヘッダのコピー
-    buf += sizeof(struct ether_header);
-    memcpy(buf, packet -> ip, sizeof(struct iphdr));
-    packet -> ip = (struct iphdr *)buf;
+    if (packet -> ip != NULL) {
+        memcpy(buf, packet -> ip, sizeof(struct iphdr));
+        packet -> ip = (struct iphdr *)buf;
     
+        buf += sizeof(struct iphdr);
+
+        // UDPヘッダのコピー
+        if (packet -> udp != NULL) {
+            memcpy(buf, packet -> udp, sizeof(struct udphdr));
+            packet -> udp = (struct udphdr *)buf;
+            buf += sizeof(struct udphdr);
+        }
+    }
+
+    // Dataのコピー
+    memcpy(buf, packet -> data, packet -> data_size);
+    packet -> data = buf;
 }
 
