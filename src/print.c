@@ -5,7 +5,6 @@
  * @brief バイナリを表示
  * @param (raw_packet) パケット
  */
-
 void PrintBinary(RawPacket raw_packet) {
     int count = 0;
     
@@ -33,8 +32,6 @@ void PrintBinary(RawPacket raw_packet) {
  * @param (packet) パケット
  */
 void PrintRawPacket(Packet *packet){
-    int count = 0;
-
     RawPacket raw_packet = {
         packet -> ptr,
         packet -> size
@@ -50,8 +47,6 @@ void PrintRawPacket(Packet *packet){
  * @param (packet) パケット
  */
 void PrintRawEthernet(Packet *packet){
-    int count = 0;
-
     RawPacket raw_packet = {
         (unsigned char *)packet -> eh,
         sizeof(struct ether_header)
@@ -63,12 +58,10 @@ void PrintRawEthernet(Packet *packet){
 }
 
 /**
- * @brief パケットのバイナリを表示
+ * @brief IPのバイナリを表示
  * @param (packet) パケット
  */
 void PrintRawIP(Packet *packet){
-    int count = 0;
-
     RawPacket raw_packet = {
         (unsigned char *)packet -> ip,
         sizeof(struct iphdr)
@@ -80,12 +73,41 @@ void PrintRawIP(Packet *packet){
 }
 
 /**
+ * @brief UDPのバイナリを表示
+ * @param (packet) パケット
+ */
+void PrintRawUDP(Packet *packet){
+    RawPacket raw_packet = {
+        (unsigned char *)packet -> udp,
+        sizeof(struct udphdr)
+    };
+
+    printf("-*-*-*-*-   Raw UDP   -*-*-*-*-\n");
+
+    PrintBinary(raw_packet);
+}
+
+/**
+ * @brief データ部のバイナリを表示
+ * @param (packet) パケット
+ */
+void PrintRawData(Packet *packet){
+    RawPacket raw_packet = {
+        (unsigned char *)packet -> data,
+        packet -> data_size
+    };
+
+    printf("-*-*-*-*-   Raw DATA   -*-*-*-*-\n");
+
+    PrintBinary(raw_packet);
+}
+
+
+/**
  * @brief イーサネットを表示する
  * @param (packet) パケット
  */
 void PrintEthernet(Packet *packet){
-    int count = 0;
-
     char dhost[19];
     char shost[19];
 
@@ -123,7 +145,7 @@ void PrintIP(Packet *packet){
     printf("-*-*-*-*-    IP    -*-*-*-*-\n");
     printf("version          : %d\n", packet -> ip -> version);
     printf("IP header length : %d\n", packet -> ip -> ihl);
-    printf("type of service  : %"PRId8"\n", packet -> ip -> tos);
+    printf("type of service  : %d\n", packet -> ip -> tos);
     printf("total length     : %d\n", packet -> ip -> tot_len);
     printf("identification   : %d\n", packet -> ip -> id);
     printf("frag offset      : %d\n", packet -> ip -> frag_off);
@@ -132,4 +154,25 @@ void PrintIP(Packet *packet){
     printf("checksum         : %d\n", packet -> ip -> check);
     printf("destionation     : %s\n", daddr);
     printf("source           : %s\n\n", saddr);
+}
+
+void PrintUDP(Packet *packet) {
+    printf("-*-*-*-*-   UDP   -*-*-*-*-\n");
+
+    printf("source port      : %d\n", htons(packet -> udp -> uh_sport));
+    printf("destination port : %d\n", htons(packet -> udp -> uh_dport));
+    printf("udp length       : %d\n", htons(packet -> udp -> uh_ulen));
+    printf("checksum         : %x\n\n", htons(packet -> udp -> uh_sum));
+}
+
+void PrintData(Packet *packet){
+    printf("-*-*-*-*-   DATA   -*-*-*-*-\n");
+
+    char *data = (char *)malloc(packet -> size + 1);
+    memcpy(data, packet -> data, packet -> data_size);
+    data[packet -> data_size + 1] = 0x0;
+
+    printf("%s\n\n", data);
+
+    free(data);
 }
