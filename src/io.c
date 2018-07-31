@@ -294,10 +294,18 @@ void GeneratePacketBuffer(Packet *packet){
             packet -> udp = (struct udphdr *)buf;
             buf += sizeof(struct udphdr);
         }
+        // TCPヘッダのコピー
+        else if (packet -> tcp != NULL) {
+            memcpy(buf, packet -> tcp, sizeof(struct tcphdr));
+            packet -> tcp = (struct tcphdr *)buf;
+            buf += sizeof(struct tcphdr);
+        }
     }
 
     // Dataのコピー
-    memcpy(buf, packet -> data, packet -> data_size);
-    packet -> data = buf;
+    if (packet -> data != NULL) {
+        memcpy(buf, packet -> data, packet -> data_size);
+        packet -> data = buf;
+    }
 }
 

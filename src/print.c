@@ -182,24 +182,19 @@ void PrintUDP(Packet *packet) {
 void PrintTCP(Packet *packet) {
     printf("-*-*-*-*-   TCP   -*-*-*-*-\n");
 
-    printf("source   : %d\n", htons(packet -> tcp -> source));
-    printf("dest     : %d\n", htons(packet -> tcp -> dest));
-    printf("seq      : %d\n", htons(packet -> tcp -> seq));
-    printf("ack_seq  : %x\n", htons(packet -> tcp -> ack_seq));
+    printf("source port      :  %d\n", htons(packet -> tcp -> th_sport));
+    printf("destination port :  %d\n", htons(packet -> tcp -> th_dport));
+    printf("seq number       :  %d\n", htons(packet -> tcp -> th_seq));
+    printf("ack number       :  %d\n", htons(packet -> tcp -> th_ack));
 
-    printf("doff     : %x\n", htons(packet -> tcp -> doff));
-    printf("res1     : %x\n", htons(packet -> tcp -> res1));
-    printf("res2     : %x\n", htons(packet -> tcp -> res2));
-    printf("urg      : %x\n", htons(packet -> tcp -> urg));
-    printf("ack      : %d\n", htons(packet -> tcp -> ack));
-    printf("psh      : %d\n", htons(packet -> tcp -> psh));
-    printf("rst      : %d\n", htons(packet -> tcp -> rst));
-    printf("syn      : %d\n", htons(packet -> tcp -> syn));
-    printf("fin      : %d\n", htons(packet -> tcp -> fin));
+    printf("data offset      :  %d\n", htons(packet -> tcp -> th_off));
+    printf("res              : x%x\n", htons(packet -> tcp -> th_x2));
+    
+    printf("flag             : x%x\n", htons(packet -> tcp -> th_flags));
 
-    printf("window   : %x\n", htons(packet -> tcp -> window));
-    printf("check    : %x\n", htons(packet -> tcp -> check));
-    printf("urg_ptr  : %x\n", htons(packet -> tcp -> urg_ptr));
+    printf("window           :  %d\n", htons(packet -> tcp -> th_win));
+    printf("check            : x%x\n", htons(packet -> tcp -> th_sum));
+    printf("urg_ptr          : x%x\n", htons(packet -> tcp -> th_urp));
 }
 
 void PrintData(Packet *packet){

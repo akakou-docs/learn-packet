@@ -54,6 +54,7 @@ dkms.conf
 src/client/ip/client
 src/client/ethernet/client
 src/client/udp/client
+src/client/tcp/client
 
 src/server/ip/client
 src/server/ethernet/client
