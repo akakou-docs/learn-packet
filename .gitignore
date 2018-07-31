@@ -58,6 +58,7 @@ src/client/udp/client
 src/server/ip/client
 src/server/ethernet/client
 src/server/udp/server
+src/server/tcp/server
 
 peda-session-client.txt
 peda-session-server.txt

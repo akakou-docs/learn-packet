@@ -1,6 +1,5 @@
 #include "io.h"
 
-
 /**
  * @brief バイナリを表示
  * @param (raw_packet) パケット
@@ -88,6 +87,21 @@ void PrintRawUDP(Packet *packet){
 }
 
 /**
+ * @brief UDPのバイナリを表示
+ * @param (packet) パケット
+ */
+void PrintRawTCP(Packet *packet){
+    RawPacket raw_packet = {
+        (unsigned char *)packet -> tcp,
+        sizeof(struct tcphdr)
+    };
+
+    printf("-*-*-*-*-   Raw TCP   -*-*-*-*-\n");
+
+    PrintBinary(raw_packet);
+}
+
+/**
  * @brief データ部のバイナリを表示
  * @param (packet) パケット
  */
@@ -165,8 +179,34 @@ void PrintUDP(Packet *packet) {
     printf("checksum         : %x\n\n", htons(packet -> udp -> uh_sum));
 }
 
+void PrintTCP(Packet *packet) {
+    printf("-*-*-*-*-   TCP   -*-*-*-*-\n");
+
+    printf("source   : %d\n", htons(packet -> tcp -> source));
+    printf("dest     : %d\n", htons(packet -> tcp -> dest));
+    printf("seq      : %d\n", htons(packet -> tcp -> seq));
+    printf("ack_seq  : %x\n", htons(packet -> tcp -> ack_seq));
+
+    printf("doff     : %x\n", htons(packet -> tcp -> doff));
+    printf("res1     : %x\n", htons(packet -> tcp -> res1));
+    printf("res2     : %x\n", htons(packet -> tcp -> res2));
+    printf("urg      : %x\n", htons(packet -> tcp -> urg));
+    printf("ack      : %d\n", htons(packet -> tcp -> ack));
+    printf("psh      : %d\n", htons(packet -> tcp -> psh));
+    printf("rst      : %d\n", htons(packet -> tcp -> rst));
+    printf("syn      : %d\n", htons(packet -> tcp -> syn));
+    printf("fin      : %d\n", htons(packet -> tcp -> fin));
+
+    printf("window   : %x\n", htons(packet -> tcp -> window));
+    printf("check    : %x\n", htons(packet -> tcp -> check));
+    printf("urg_ptr  : %x\n", htons(packet -> tcp -> urg_ptr));
+}
+
 void PrintData(Packet *packet){
     printf("-*-*-*-*-   DATA   -*-*-*-*-\n");
+    if (packet -> data_size <= 0) {
+        return;
+    }
 
     char *data = (char *)malloc(packet -> size + 1);
     memcpy(data, packet -> data, packet -> data_size);

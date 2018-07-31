@@ -166,6 +166,72 @@ int AnalyzeUDPPacket(Packet *packet, RawPacket *lest_packet){
 }
 
 /**
+ * @brief TCPパケットの解析
+ * @param (packet) パケットの構造体
+ * @param (lest_packet) パケットのバイナリデータを持つ構造体
+ */
+int AnalyzeTCPPacket(Packet *packet, RawPacket *lest_packet){
+    // 読み込んだ部分からのポインタ
+    unsigned char *ptr = lest_packet -> buf;
+
+    // 読み込んでない残りのサイズ
+    int lest = lest_packet -> lest;
+    
+    // tcpのパケットの構造体を宣言
+    struct tcphdr *tcphdr;
+
+    // オプション
+    unsigned char *option;
+
+    // オプションの長さ、パケッtの長さ
+    int optionLen, len;
+
+    // 構造体のサイズ分データがあるかのチェック
+    if(lest < sizeof(struct tcphdr)){
+        // sizeが不足した場合にエラーを吐く
+        fprintf(stderr, "lest(%d) < sizeof(struct tcphdr)\n", lest);
+        return -1;
+    }
+
+    // ptrをtcphdrに無理やりキャストして代入
+    tcphdr = (struct tcphdr *)ptr;
+    // ptrにパケットのデータ部を代入
+    ptr += sizeof(struct tcphdr);
+    // lestにパケットのデータ部のサイズを代入
+    lest -= sizeof(struct tcphdr);
+
+
+    // オプションの大きさ(TCPヘッダ長を5で引いた値 * 4バイトを格納
+    optionLen = (tcphdr -> doff - 5) * 4;
+    if(optionLen > 0){
+        if(optionLen >= 1500){
+            // オプションのサイズが大きすぎたらエラーを吐く
+            fprintf(stderr, "IP optionLen(%d):too big\n", optionLen);
+            return -1;
+        }
+        // サイズがちょうどよかったら
+        // ptrの値をoption に代入
+        option = ptr;
+        // ptrをoptionLen分読み進める
+        ptr += optionLen;
+        // lestをoptionLen分減らす
+        lest -= optionLen;
+    }
+
+
+    // バッファのポインタをコピー
+    lest_packet -> buf = ptr;
+
+    // 残りサイズをコピー
+    lest_packet -> lest = lest;
+
+    // UDPヘッダをコピー
+    packet -> tcp = tcphdr;
+
+    return(0);
+}
+
+/**
  * @brief パケットの解析
  * @param (packet) パケットの構造体
  * @param (lest_packet) パケットのバイナリデータを持つ構造体
@@ -185,6 +251,12 @@ int AnalyzePacket(Packet *packet){
 
         if (packet -> ip -> protocol == IPPROTO_UDP) {
             if(AnalyzeUDPPacket(packet, &lest_packet) == -1) {
+                return -1;
+            }
+        }
+        
+        else if (packet -> ip -> protocol == IPPROTO_TCP) {
+            if(AnalyzeTCPPacket(packet, &lest_packet) == -1) {
                 return -1;
             }
         }

@@ -14,13 +14,13 @@ typedef struct {
  */
 typedef struct {
     unsigned char *ptr;
-    size_t size;
+    int size;
     struct ether_header *eh;
     struct iphdr *ip;
     struct tcphdr *tcp;
     struct udphdr *udp;
     unsigned char *data;
-    size_t data_size;
+    int data_size;
 } Packet;
 
 
