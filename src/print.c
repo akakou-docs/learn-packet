@@ -1,4 +1,5 @@
 #include "io.h"
+#include "list.c"
 
 /**
  * @brief バイナリを表示
@@ -116,6 +117,15 @@ void PrintRawData(Packet *packet){
     PrintBinary(raw_packet);
 }
 
+void PrintString(RawPacket raw_packet) {
+    char *data = (char *)malloc(raw_packet.lest + sizeof(char));
+    memcpy(data, raw_packet.buf, raw_packet.lest);
+    data[raw_packet.lest + 1] = 0x0;
+
+    printf("%s", data);
+
+    free(data);
+}
 
 /**
  * @brief イーサネットを表示する
@@ -203,11 +213,40 @@ void PrintData(Packet *packet){
         return;
     }
 
-    char *data = (char *)malloc(packet -> size + 1);
-    memcpy(data, packet -> data, packet -> data_size);
-    data[packet -> data_size + 1] = 0x0;
+    RawPacket raw_packet = {
+        packet -> data,
+        packet -> data_size
+    };
 
-    printf("%s\n\n", data);
+    PrintString(raw_packet);
+    printf("\n\n");
+}
 
-    free(data);
+int PrintProtocolStream(Segment *segment) {
+    printf("-*-*-* Protocol Stream *-*-*-\n");
+
+    if (segment -> start == NULL || segment -> end == NULL) {
+        return -1;
+    }
+
+    InitIterater(segment);
+    while(1) {
+        ElementOfSegment *element = Iterate();
+
+        if (element == NULL) {
+            break;
+        }
+
+        RawPacket raw_packet = {
+            element -> packet -> data,
+            element -> packet -> data_size
+        };
+
+        PrintString(raw_packet);
+    }
+
+    printf("\n\n");
+
+    
+    return 0;
 }
