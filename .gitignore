@@ -66,3 +66,5 @@ peda-session-client.txt
 peda-session-server.txt
 
 .vscode
+
+bin/
