@@ -1,3 +1,2 @@
-# L2-HTTP
-
-L2から頑張ってHTTPサーバを立てるぜ！
+# let-us-make-packets
+パケットを作るぞい（ ＾ω＾）
