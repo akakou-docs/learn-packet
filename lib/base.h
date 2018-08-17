@@ -31,24 +31,4 @@ typedef struct {
     int data_size;
 } Packet;
 
-/**
- * @brief パケットをリストでつなぐために使う
- */
-typedef struct ElementOfSegment {
-    Packet *packet;
-    struct ElementOfSegment *fd;
-    struct ElementOfSegment *bk;
-} ElementOfSegment;
-
-
-/**
- * @brief 読み込み時のセグメント
- */
-typedef struct {
-    unsigned char *data;
-    int data_size;
-    struct ElementOfSegment *start;
-    struct ElementOfSegment *end;
-} Segment;
-
 #endif
