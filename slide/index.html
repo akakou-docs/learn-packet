@@ -244,6 +244,55 @@ ISOによって制定された。
 
 <<<
 
+## Ethernet
+
+>>>
+
+### Ethernetとは
+
+有線のLANで最も使用されている技術規格。
+OSI参照モデルの下位2つの層である物理層とデータリンク層に関して規定している。
+
+>>>
+
+### イーサネットのフレーム（パケット）
+
+| 名前 | サイズ | 詳細 |
+|---|---|---|
+| ブリアンブル | 8 | フレームの始まりを合図する |
+| 宛先MACアドレス | 6 | 宛先のMACアドレス |
+| 送信元MACアドレス | 6 | 送信元MACアドレス |
+
+
+>>>
+
+### 続き
+
+| 名前 | サイズ | 詳細 |
+|---|---|---|
+| タイプ | 2 | 上位プロトコルの番号 |
+| データ | 46〜1500 | データだよ |
+| FCS | 4 | チェックサム的ななつ |
+
+
+>>>
+
+### 構造体
+linux/if_ehter.h
+
+```c
+ struct ethhdr
+ {
+    unsigned char   h_dest[ETH_ALEN];   /* destination eth addr */
+    unsigned char   h_source[ETH_ALEN]; /* source ether addr    */
+    unsigned short  h_proto;        /* packet type ID field */
+ };
+
+```
+raw_socket側では宛先MACアドレス、  
+送信元MACアドレス、タイプしか扱わない
+
+
 
 
                 </section>
