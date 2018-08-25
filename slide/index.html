@@ -1475,86 +1475,45 @@ server/src/udp.c
  * @return 成功したら1, 失敗したら-1
  */
 int Send(int soc){
-    // 変数の宣言
-    int size;
-    struct ether_header eh;
-
+   // 変数の宣言
     Packet packet;
+    unsigned char buf[2048];
 
-    // シードをセット
-    srand(time(NULL));
+    // パケットの読み込み
+    if((packet.size = read(soc, buf, sizeof(buf))) <= 0){
+        // 失敗したらエラーを開く
+        perror("read");
+        return -1;
+    }
 
-    // パケットの初期化
-    // Data
-    unsigned char data[] = "hello world";
+    packet.ptr = buf;
 
-    // Ethernet
-    sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
-    sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
-    eh.ether_type = (u_int16_t)8;
-    
-    // IP
-    int over_eh_size =  
-            + sizeof(struct iphdr) 
-            + sizeof(struct udphdr) 
-            + sizeof(data);
-
-    struct iphdr ip = {
-        sizeof(struct iphdr) / 4,
-        4,
-        (u_int8_t)0,
-        (u_int16_t)htons(over_eh_size),
-        (u_int16_t)htons(rand() % 0x10000),
-        (u_int16_t)0,
-        (u_int8_t)1,
-        (u_int8_t)17,
-        (u_int16_t)0x00,
-        (u_int32_t)0x00,
-        (u_int32_t)0x00        
-    };
-
-    inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
-    inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
-
-    ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
-
-    // udp
-    struct udphdr udp = {
-        (u_int16_t)ntohs(rand() % 0x50000),
-        (u_int16_t)ntohs(8080),
-        (u_int16_t)ntohs(sizeof(udp) + sizeof(data)),
-        (u_int16_t)0x00
-    };
-
-    // 実体の生成
-    GenerateEthernetPacket(&packet, &eh);
-    AddIPHeader(&packet, &ip);
-    AddUDPHeader(&packet, &udp);
-    AddData(&packet, data, sizeof(data));
+    // パケットを構造体に当てはめる
+    AnalyzePacket(&packet);
 
     // 表示
     printf("text:\n");
     PrintEthernet(&packet);
-    PrintIP(&packet);
-    PrintUDP(&packet);
+    if (htons(packet.eh -> ether_type) == ETHERTYPE_IP) {
+        PrintIP(&packet);
+
+        if (packet.ip -> protocol == IPPROTO_UDP && packet.udp != NULL) {
+            PrintUDP(&packet);
+        }
+    }
     PrintData(&packet);
 
-    printf("binary:\n");
+    printf("binary\n");
     PrintRawEthernet(&packet);
-    PrintRawIP(&packet);
-    PrintRawUDP(&packet);
-    PrintRawData(&packet);
-    PrintRawPacket(&packet);
+    if (htons(packet.eh -> ether_type) == ETHERTYPE_IP) {
+        PrintRawIP(&packet);
 
-
-    // パケットの読み込み
-    if((size = write(soc, packet.ptr, packet.size)) <= 0){
-        // 失敗したらエラーを開く
-        perror("write");
-        return -1;
+        if (packet.ip -> protocol == IPPROTO_UDP && packet.udp != NULL) {
+            PrintRawUDP(&packet);
+        }
+        PrintRawData(&packet);
     }
-
-    FreePacket(&packet);
+    PrintRawPacket(&packet);
 
     return 0;
 }
@@ -2349,98 +2308,51 @@ server/src/tcp.c
  * @return 成功したら1, 失敗したら-1
  */
 int Send(int soc){
-    // 変数の宣言
-    struct ether_header eh;
-    
-    int size;
+   // 変数の宣言
     Packet packet;
-    packet.eh = &eh;
+    unsigned char buf[2048];
 
-    // シードをセット
-    srand(time(NULL));
+    // パケットの読み込み
+    if((packet.size = read(soc, buf, sizeof(buf))) <= 0){
+        // 失敗したらエラーを開く
+        perror("read");
+        return -1;
+    }
 
-    // パケットの初期化
-    // Data
-    unsigned char data[] = "hi";
-    packet.data = data;
-    packet.data_size = sizeof(data);
+    packet.ptr = buf;
 
-    // Ethernet
-    sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
-    sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
-    eh.ether_type = (u_int16_t)8;
-    
-    // IP
-    int over_eh_size =  
-            + sizeof(struct iphdr) 
-            + sizeof(struct tcphdr) 
-            + sizeof(data);
-
-    struct iphdr ip = {
-        sizeof(struct iphdr) / 4,
-        4,
-        (u_int8_t)0,
-        (u_int16_t)htons(over_eh_size),
-        (u_int16_t)htons(rand() % 0x10000),
-        (u_int16_t)htons(0b0100000000000000),// + (rand() % 0x100)),
-        (u_int8_t)1,
-        (u_int8_t)IPPROTO_TCP,
-        (u_int16_t)0x00,
-        (u_int32_t)0x00,
-        (u_int32_t)0x00        
-    };
-
-    inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
-    inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
-
-    ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
-
-    // tcp
-    int offset = sizeof(struct tcphdr) / 4;
-
-    struct tcphdr tcp = {
-        (u_int16_t)htons(rand() % 0x50000),
-        (u_int16_t)htons(8080),
-        (u_int32_t)htons(0),
-        (u_int32_t)0,
-        (u_int8_t)0,
-        (u_int8_t)htons(offset),
-        (u_int8_t)TH_SYN,
-        (u_int16_t)htons(500),
-        (u_int16_t)0,
-        (u_int16_t)0,
-     };
-
-
-    // 実体の生成
-    GenerateEthernetPacket(&packet, &eh);
-    AddIPHeader(&packet, &ip);
-    AddTCPHeader(&packet, &tcp);
-    AddData(&packet, data, sizeof(data));
-
+    // パケットを構造体に当てはめる
+    AnalyzePacket(&packet);
 
     // 表示
     printf("text:\n");
     PrintEthernet(&packet);
-    PrintIP(&packet);
-    PrintTCP(&packet);
+    if (htons(packet.eh -> ether_type) == ETHERTYPE_IP) {
+        PrintIP(&packet);
+
+        if (packet.ip -> protocol == IPPROTO_UDP && packet.udp != NULL) {
+            PrintUDP(&packet);
+        }
+        else if (packet.ip -> protocol == IPPROTO_TCP && packet.tcp != NULL) {
+            PrintTCP(&packet);
+        }
+    }
     PrintData(&packet);
 
-    printf("binary:\n");
+    printf("binary\n");
     PrintRawEthernet(&packet);
-    PrintRawIP(&packet);
-    PrintRawTCP(&packet);
-    PrintRawData(&packet);
-    PrintRawPacket(&packet);
+    if (htons(packet.eh -> ether_type) == ETHERTYPE_IP) {
+        PrintRawIP(&packet);
 
-    // パケットの読み込み
-    if((size = write(soc, packet.ptr, packet.size)) <= 0){
-        // 失敗したらエラーを開く
-        perror("write");
-        return -1;
+        if (packet.ip -> protocol == IPPROTO_UDP && packet.udp != NULL) {
+            PrintRawUDP(&packet);
+        }
+        else if (packet.ip -> protocol == IPPROTO_TCP && packet.tcp != NULL){
+            PrintRawTCP(&packet);
+        }
+        PrintRawData(&packet);
     }
-
-    FreePacket(&packet);
+    PrintRawPacket(&packet);
 
     return 0;
 }
