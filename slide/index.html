@@ -676,6 +676,8 @@ int Send(int soc){
 ether_headerをヒープに移動します。  
 （理由は後に説明）
 
+lib/generate.c
+
 ```c
 void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
     size_t size = sizeof(struct ether_header);
@@ -725,6 +727,84 @@ void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
 ![](./img/ethernet1.png)
 
 <<<
+
+### Ethernetパケットを
+### 完全に理解したところで（）
+
+>>>
+
+### 次はIPパケットやります。
+
+<<<
+
+## IP
+
+>>>
+
+### IPとは
+
+インターネットにおいてパケットを  
+中継するのに使われるパケット。
+
+>>>
+
+### IPのパケット
+
+| 名前 | サイズ | 詳細 |
+|---|---|---|
+| ihl | 4bit | IPヘッダの長さ |
+| version | 4bit | IPのバージョン |
+| tos | 1 | パケットの優先順位 |
+| tot_len | 2 | パケット全体のサイズ |
+| id | 2 | パケットのID |
+
+>>>
+
+### IPのパケット
+
+| 名前 | サイズ | 詳細 |
+|---|---|---|
+| frag_off | 2 | 分割に関するフラグ |
+| ttl | 1 | 経由可能デバイス数 |
+| protocol | 1 | 上位プロトコル |
+| check | 2 | チェックサム |
+| saddr | 4 | 送信元IPアドレス |
+| daddr | 4 | 送信先IPアドレス |
+
+>>>
+
+### 構造体
+
+netinet/ip.h
+
+```c
+struct iphdr
+  {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    unsigned int ihl:4;
+    unsigned int version:4;
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    unsigned int version:4;
+    unsigned int ihl:4;
+#else
+# error "Please fix <bits/endian.h>"
+#endif
+    u_int8_t tos;
+    u_int16_t tot_len;
+    u_int16_t id;
+    u_int16_t frag_off;
+    u_int8_t ttl;
+    u_int8_t protocol;
+    u_int16_t check;
+    u_int32_t saddr;
+    u_int32_t daddr;
+    /*The options start here. */
+  };
+```
+
+>>>
+
+
 
 
 
