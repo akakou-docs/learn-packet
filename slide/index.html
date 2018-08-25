@@ -1149,6 +1149,132 @@ int AnalyzePacket(Packet *packet){
 
 ```
 
+<<<
+
+## IPパケットを
+## 送信してみる
+
+>>>
+
+### 手順
+Ethernetと違いなし。
+
+#### 1. パケットの作成　　　　　　
+#### 2. 解析して構造体に落とし込む
+#### 3. パケットの表示　　　　　　
+
+>>>
+
+### コード
+
+client/src/ip.c
+
+```c
+/**
+ * @brief 実際のパケットの受取部
+ * @param (soc) ソケット
+ * @return 成功したら1, 失敗したら-1
+ */
+int Send(int soc){
+    // 変数の宣言
+    int size;
+    Packet packet;
+
+    struct ether_header eh;
+
+    // シードをセット
+    srand(time(NULL));
+
+    // パケットの初期化
+    // Ethernet
+    sprintf(eh.ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
+    sprintf(eh.ether_shost, "\x64\x80\x99\x4f\x20\xf4");
+    eh.ether_type = (u_int16_t)8;
+    
+    // IP
+    struct iphdr ip = {
+        sizeof(struct iphdr) / 4,
+        4,
+        (u_int8_t)0,
+        (u_int16_t)htons(sizeof(struct iphdr)),
+        (u_int16_t)htons(rand() % 0x10000),
+        (u_int16_t)htons(0b01000000000000000000000 + (rand() % 0x100)),
+        (u_int8_t)1,
+        (u_int8_t)17,
+        (u_int16_t)0x00,
+        (u_int32_t)0x00,
+        (u_int32_t)0x00        
+    };
+
+    inet_pton(AF_INET, "192.168.10.112", &(ip.saddr));
+    inet_pton(AF_INET, "192.168.10.112", &(ip.daddr));
+
+    ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
+
+    packet.ip = &ip;
+
+    // パケットの実態の生成
+    GenerateEthernetPacket(&packet, &eh);
+    AddIPHeader(&packet, &ip);
+
+    // パケットの表示
+    PrintEthernet(&packet);
+    PrintIP(&packet);
+    PrintRawEthernet(&packet);    
+    PrintRawIP(&packet);
+    PrintRawPacket(&packet);
+
+    // パケットの送信
+    if((size = write(soc, packet.ptr, packet.size)) <= 0){
+        // 失敗したらエラーを開く
+        perror("write");
+        return -1;
+    }
+
+    // パケットの開放
+    FreePacket(&packet);
+
+    return 0;
+}
+
+```
+
+>>>
+
+### コード（パケットの作成）
+
+lib/generate.c
+
+```c
+void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
+    size_t size = sizeof(struct ether_header);
+    packet -> ptr = (unsigned char *)malloc(size);
+    packet -> eh = (struct ether_header *)packet -> ptr;
+    memcpy(packet -> eh, eh, sizeof(struct ether_header));
+    packet -> size = sizeof(struct ether_header);
+}
+
+void AddIPHeader(Packet *packet, struct iphdr *ip) {
+    size_t size = sizeof(struct iphdr);
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> ip = (struct iphdr *)(packet -> ptr + packet -> size);
+    memcpy(packet -> ip, ip, sizeof(struct iphdr));
+    packet -> size = size + packet -> size;
+}
+```
+
+>>>
+
+### メモリ開放
+Ethernetのときと同じ
+
+lib/generate.c
+
+```c
+void FreePacket(Packet *packet) {
+    free(packet -> ptr);
+}
+```
 
 
 
