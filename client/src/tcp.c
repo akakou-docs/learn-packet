@@ -37,8 +37,8 @@ int Send(int soc){
     packet.data_size = sizeof(data);
 
     // Ethernet
-    sprintf(eh.ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
-    sprintf(eh.ether_shost, "\x64\x80\x99\x4f\x20\xf4");
+    sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
+    sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
     eh.ether_type = (u_int16_t)8;
     
     // IP
@@ -61,8 +61,8 @@ int Send(int soc){
         (u_int32_t)0x00        
     };
 
-    inet_pton(AF_INET, "192.168.10.112", &(ip.saddr));
-    inet_pton(AF_INET, "192.168.10.112", &(ip.daddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
 
     ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
@@ -142,7 +142,7 @@ int main(int argc, char *argv[], char *envp[]){
     // 無限に実行
     while(1){
         Send(soc);
-        sleep(20);
+        sleep(10);
     }
 
     // ソケットを閉じる

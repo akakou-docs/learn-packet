@@ -832,6 +832,7 @@ Ethernetと違いなし。
 
 
 >>>
+
 ### コード
 
 server/src/ip.c
@@ -2251,7 +2252,73 @@ struct udphdr udp = {
 
 <<<
 
+# TCP
 
+>>>
+
+### TCPとは
+
+OSI参照モデルの第4層について規定するプロトコル。 UDPと比べると、安全性が保証されている。
+（複雑なので今回は、単発でパケットを送受信する）
+
+>>>
+
+### TCPのパケット
+
+| 名前 | サイズ | 詳細 |
+|---|---|---|
+| th_sport | 2 | 送信元port |
+| th_dport | 2 | 宛先port |
+| th_seq | 4 | シーケンス番号 |
+| th_ack | 4 | 確認応答番号 |
+| th_off | 1 | データ + TCPヘッダサイズ |
+| th_x2 | 3bit | 未使用 |
+
+>>>
+
+### TCPのパケット
+
+| 名前 | サイズ | 詳細 |
+|---|---|---|
+| th_flags | 9bit | フラグ |
+| th_win | 2 | ウィンドウサイズ |
+| th_sum | 2 | チェックサム |
+| th_urp | 2 | 緊急情報のポインタ |
+
+>>>
+
+### 構造体
+
+netinet/tcp.h
+
+```c
+struct tcphdr
+      {
+	uint16_t th_sport;	/* source port */
+	uint16_t th_dport;	/* destination port */
+	tcp_seq th_seq;		/* sequence number */
+	tcp_seq th_ack;		/* acknowledgement number */
+# if __BYTE_ORDER == __LITTLE_ENDIAN
+	uint8_t th_x2:4;	/* (unused) */
+	uint8_t th_off:4;	/* data offset */
+# endif
+# if __BYTE_ORDER == __BIG_ENDIAN
+	uint8_t th_off:4;	/* data offset */
+	uint8_t th_x2:4;	/* (unused) */
+# endif
+	uint8_t th_flags;
+# define TH_FIN	0x01
+# define TH_SYN	0x02
+# define TH_RST	0x04
+# define TH_PUSH	0x08
+# define TH_ACK	0x10
+# define TH_URG	0x20
+	uint16_t th_win;	/* window */
+	uint16_t th_sum;	/* checksum */
+	uint16_t th_urp;	/* urgent pointer */
+      };
+
+```
 
                 </section>
             </div>
