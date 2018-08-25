@@ -400,7 +400,7 @@ if(size = read(soc, buf, sizeof(buf)) <= 0){
 
 <<<
 
-## Ethernet
+# Ethernet
 
 >>>
 
@@ -750,7 +750,7 @@ void FreePacket(Packet *packet) {
 
 <<<
 
-## IP
+# IP
 
 >>>
 
@@ -1364,6 +1364,45 @@ AddIPHeader(&packet, &ip);
 ![](./img/ip.png)
 
 <<<
+
+# UDP
+
+>>>
+
+### UDPとは
+
+OSI参照モデルの第4層について規定するプロトコル。
+TCPと比べると、安全性が保証されていない。
+
+
+>>>
+
+### UDPのパケット
+
+| 名前 | サイズ | 詳細 |
+|---|---|---|
+| uh_sport | 2 | 送信元port |
+| uh_dport | 2 | 宛先port |
+| uh_ulen | 2 | udpパケットのサイズ |
+| uh_sum | 2 | チェックサム |
+
+
+>>>
+
+### 構造体
+
+netinet/udp.h
+
+
+```c
+ struct udphdr {
+         u_int16_t uh_sport;           /* source port */
+         u_int16_t uh_dport;           /* destination port */
+         u_int16_t uh_ulen;            /* udp length */
+         u_int16_t uh_sum;             /* udp checksum */
+ };
+```
+
 
 
                 </section>
