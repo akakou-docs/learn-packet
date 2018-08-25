@@ -57,8 +57,8 @@ int Send(int soc){
         (u_int32_t)0x00        
     };
 
-    inet_pton(AF_INET, "192.168.10.112", &(ip.saddr));
-    inet_pton(AF_INET, "192.168.10.112", &(ip.daddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
 
     ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
@@ -82,7 +82,6 @@ int Send(int soc){
     PrintIP(&packet);
     PrintUDP(&packet);
     PrintData(&packet);
-    PrintString(&packet);
 
     printf("binary:\n");
     PrintRawEthernet(&packet);
@@ -130,7 +129,7 @@ int main(int argc, char *argv[], char *envp[]){
     // 無限に実行
     while(1){
         Send(soc);
-        sleep(20);
+        sleep(5);
     }
 
     // ソケットを閉じる

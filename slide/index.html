@@ -1248,8 +1248,8 @@ int Send(int soc){
         (u_int32_t)0x00        
     };
 
-    inet_pton(AF_INET, "192.168.10.112", &(ip.saddr));
-    inet_pton(AF_INET, "192.168.10.112", &(ip.daddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
 
     ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
@@ -1348,8 +1348,8 @@ struct iphdr ip = {
     (u_int32_t)0x00        
 };
 
-inet_pton(AF_INET, "192.168.10.112", &(ip.saddr));
-inet_pton(AF_INET, "192.168.10.112", &(ip.daddr));
+inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
+inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
 
 ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
@@ -1511,8 +1511,8 @@ int Send(int soc){
         (u_int32_t)0x00        
     };
 
-    inet_pton(AF_INET, "192.168.10.112", &(ip.saddr));
-    inet_pton(AF_INET, "192.168.10.112", &(ip.daddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
 
     ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
@@ -2034,8 +2034,8 @@ int Send(int soc){
         (u_int32_t)0x00        
     };
 
-    inet_pton(AF_INET, "192.168.10.112", &(ip.saddr));
-    inet_pton(AF_INET, "192.168.10.112", &(ip.daddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
 
     ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
@@ -2059,7 +2059,6 @@ int Send(int soc){
     PrintIP(&packet);
     PrintUDP(&packet);
     PrintData(&packet);
-    PrintString(&packet);
 
     printf("binary:\n");
     PrintRawEthernet(&packet);
@@ -2112,7 +2111,6 @@ void AddUDPHeader(Packet *packet, struct udphdr *udp) {
     memcpy(packet -> udp, udp, sizeof(struct udphdr));
     packet -> size = size + packet -> size;
 }
-
 ```
 
 >>>
@@ -2127,6 +2125,131 @@ void FreePacket(Packet *packet) {
     free(packet -> ptr);
 }
 ```
+
+
+
+
+
+<<<
+
+## 送信したパケットを解析
+
+>>>
+
+### C言語だと
+
+```c
+// シードをセット
+srand(time(NULL));
+
+// パケットの初期化
+// Data
+unsigned char data[] = "hello world";
+
+// Ethernet
+sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
+sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
+eh.ether_type = (u_int16_t)8;
+
+// IP
+int over_eh_size =  
+        + sizeof(struct iphdr) 
+        + sizeof(struct udphdr) 
+        + sizeof(data);
+
+struct iphdr ip = {
+    sizeof(struct iphdr) / 4,
+    4,
+    (u_int8_t)0,
+    (u_int16_t)htons(over_eh_size),
+    (u_int16_t)htons(rand() % 0x10000),
+    (u_int16_t)0,
+    (u_int8_t)1,
+    (u_int8_t)17,
+    (u_int16_t)0x00,
+    (u_int32_t)0x00,
+    (u_int32_t)0x00        
+};
+
+inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
+inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
+
+ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
+
+// udp
+struct udphdr udp = {
+    (u_int16_t)ntohs(rand() % 0x50000),
+    (u_int16_t)ntohs(8080),
+    (u_int16_t)ntohs(sizeof(udp) + sizeof(data)),
+    (u_int16_t)0x00
+};
+```
+
+>>>
+
+### Ethernetのフレーム
+前回と変わらず
+
+| 名前 | 値| 詳細 |
+|---|---|---|
+| 宛先MACアドレス | 00:00:00:00:00:00 | 宛先のMACアドレス |
+| 送信元MACアドレス | 00:00:00:00:00:00 | 送信元MACアドレス |
+| タイプ | 8 | 上位プロトコルはIP |
+
+>>>
+
+### IPのパケット
+
+| 名前 | 値 | 詳細 |
+|---|---|---|
+| version | 4 | IPv4 |
+| ihl | iphdrのサイズ / 4 | optionはなし |
+| tos | 0 | パケットの優先順位 |
+| tot_len | iphdrのサイズ | データがない、※ |
+| id | ランダム | ※ |
+
+※リトルエンディアン
+
+>>>
+
+### IPのパケット
+
+| 名前 | 値 | 詳細 |
+|---|---|---|
+| frag_off | 0 | 分割に関するフラグ |
+| ttl | 1 | 1回のみ経由可能 |
+| protocol | 17 | 上位プロトコルはUDP |
+| check | チェックサム | チェックサム |
+| saddr | 127.0.0.1 | 送信元IPアドレス |
+| daddr | 127.0.0.1 | 送信先IPアドレス |
+
+>>>
+
+
+### UDPのパケット
+
+| 名前 | 値 | 詳細 |
+|---|---|---|
+| uh_sport | ランダム | 送信元port |
+| uh_dport | 8080 | 宛先port |
+| uh_ulen | udpヘッダとデータのサイズの和 | udpパケットのサイズ |
+| uh_sum | 0 | チェックサムはチェックしない |
+
+
+※uh_sum以外リトルエンディアン
+
+>>>
+
+### データ
+> hello world
+
+>>>
+
+### WIRESHARKでみる
+
+![](./img/udp.png)
+
+<<<
 
 
 
