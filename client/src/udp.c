@@ -33,8 +33,8 @@ int Send(int soc){
     unsigned char data[] = "hello world";
 
     // Ethernet
-    sprintf(eh.ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
-    sprintf(eh.ether_shost, "\x64\x80\x99\x4f\x20\xf4");
+    sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
+    sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
     eh.ether_type = (u_int16_t)8;
     
     // IP
@@ -49,7 +49,7 @@ int Send(int soc){
         (u_int8_t)0,
         (u_int16_t)htons(over_eh_size),
         (u_int16_t)htons(rand() % 0x10000),
-        (u_int16_t)htons(0b0100000000000000),// + (rand() % 0x100)),
+        (u_int16_t)0,
         (u_int8_t)1,
         (u_int8_t)17,
         (u_int16_t)0x00,
@@ -82,6 +82,7 @@ int Send(int soc){
     PrintIP(&packet);
     PrintUDP(&packet);
     PrintData(&packet);
+    PrintString(&packet);
 
     printf("binary:\n");
     PrintRawEthernet(&packet);
