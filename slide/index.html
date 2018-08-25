@@ -181,13 +181,13 @@ ISOによって制定された。
 
 <div style="text-align:left;">
 
-##### 1層 物理層
-##### 2層 データリンク層
-##### 3層 インターネット層
-##### 4層 トランスポート層
-##### 5層 セッション層
+##### 1層 物理層　　　　　　　
+##### 2層 データリンク層　　　
+##### 3層 インターネット層　　
+##### 4層 トランスポート層　　
+##### 5層 セッション層　　　　
 ##### 6層 プレゼンテーション層
-##### 7層 アプリケーション層
+##### 7層 アプリケーション層　
 
 </div>
 
@@ -452,6 +452,175 @@ raw_socket側では宛先MACアドレス、
 <<<
 
 ## Ethernetパケットを
+## 受信してみる
+
+>>>
+
+### 手順
+
+#### 1. パケットの受け取り　　　　
+#### 2. 解析して構造体に落とし込む
+#### 3. パケットの表示　　　　　　
+
+>>>
+
+### コード
+
+```c
+int Serv(int soc){
+    // 変数の宣言
+    Packet packet;
+    unsigned char buf[2048];
+
+    // パケットの読み込み
+    if((packet.size = read(soc, buf, sizeof(buf))) <= 0){
+        // 失敗したらエラーを開く
+        perror("read");
+        return -1;
+    }
+
+    packet.ptr = buf;
+
+    // パケットを構造体に当てはめる
+    AnalyzePacket(&packet);
+
+    // 表示
+    PrintEthernet(&packet);
+    PrintRawEthernet(&packet);
+        
+    return 0;
+}
+
+```
+
+>>>
+
+### コード（パケットの解析）
+
+```c
+/**
+ * @brief イーサネットパケットの解析
+ * @param (packet) パケットの構造体
+ * @param (lest_packet) パケットのバイナリデータを持つ構造体
+ */
+int AnalyzeEtherPacket(Packet *packet, RawPacket *lest_packet){
+    // 残りポインタ
+    unsigned char *ptr = lest_packet -> buf;
+
+    // 残りのサイズ
+    int lest = lest_packet -> lest;
+
+    if(lest < sizeof(struct ether_header)) {
+        // デバッグしてデバイスナンバートサイズを表示
+        return -1;
+    }
+
+    // パケットのポインタをイーサネットに
+    // 無理やりキャストして代入
+    packet -> eh = (struct ether_header *)ptr;
+
+    // ポインタを読んだ分まで加算
+    ptr += sizeof(struct ether_header);
+
+    // 残りサイズを読んだ分減算
+    lest -= sizeof(struct ether_header);
+
+    // バッファのポインタをコピー
+    lest_packet -> buf = ptr;
+
+    // 残りサイズをコピー
+    lest_packet -> lest = lest;
+
+    return 0;
+}
+
+// 省略
+
+/**
+ * @brief パケットの解析
+ * @param (packet) パケットの構造体
+ * @param (lest_packet) パケットのバイナリデータを持つ構造体
+ */
+int AnalyzePacket(Packet *packet){
+    RawPacket lest_packet = {
+        packet -> ptr,
+        packet -> size
+    };
+    
+    AnalyzeEtherPacket(packet, &lest_packet);
+    
+    // 省略
+
+    return 0;
+}
+
+```
+
+>>>
+
+### パケット表示
+
+```c
+/**
+ * @brief パケットのバイナリを表示
+ * @param (packet) パケット
+ */
+void PrintRawPacket(Packet *packet){
+    RawPacket raw_packet = {
+        packet -> ptr,
+        packet -> size
+    };
+
+    printf("-*-*-*-*-  Raw Packet  -*-*-*-*-\n");
+
+    PrintBinary(raw_packet);
+}
+
+```
+
+>>>
+
+### パケット表示
+
+
+```c
+/**
+ * @brief イーサネットを表示する
+ * @param (packet) パケット
+ */
+void PrintEthernet(Packet *packet){
+    char dhost[19];
+    char shost[19];
+
+    snprintf(dhost, sizeof(dhost), "%02x:%02x:%02x:%02x:%02x:%02x",
+        packet -> eh -> ether_dhost[0],
+        packet -> eh -> ether_dhost[1],
+        packet -> eh -> ether_dhost[2],
+        packet -> eh -> ether_dhost[3],
+        packet -> eh -> ether_dhost[4],
+        packet -> eh -> ether_dhost[5]
+    );
+
+    snprintf(shost, sizeof(shost), "%02x:%02x:%02x:%02x:%02x:%02x",
+        packet -> eh -> ether_shost[0],
+        packet -> eh -> ether_shost[1],
+        packet -> eh -> ether_shost[2],
+        packet -> eh -> ether_shost[3],
+        packet -> eh -> ether_shost[4],
+        packet -> eh -> ether_shost[5]
+    );
+
+    printf("-*-*-*-*- Ethernet -*-*-*-*-\n");
+    printf("destionation : %s\n", dhost);
+    printf("source       : %s\n", shost);
+    printf("type         : %d\n\n", packet -> eh -> ether_type);
+}
+
+```
+
+<<<
+
+## Ethernetパケットを
 ## 送信してみる
 
 >>>
@@ -460,8 +629,8 @@ raw_socket側では宛先MACアドレス、
 
 #### 1. イーサネットパケットの用意
 #### 2. パケットの用意（後に説明）
-#### 3. 送信
-#### 4. パケットの表示
+#### 3. 送信　　　　　　　　　　　
+#### 4. パケットの表示　　　　　　
 
 >>>
 
@@ -518,69 +687,7 @@ void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
 
 ```
 
->>>
 
-### パケット表示
-
-```c
-void PrintData(Packet *packet){
-    printf("-*-*-*-*-   DATA   -*-*-*-*-\n");
-    if (packet -> data_size <= 0) {
-        return;
-    }
-
-    RawPacket raw_packet = {
-        packet -> data,
-        packet -> data_size
-    };
-
-    PrintString(raw_packet);
-    printf("\n\n");
-}
-
-```
-
->>>
-
-### パケット表示
-
-```c
-/**
- * @brief イーサネットを表示する
- * @param (packet) パケット
- */
-void PrintEthernet(Packet *packet){
-    char dhost[19];
-    char shost[19];
-
-    snprintf(dhost, sizeof(dhost), "%02x:%02x:%02x:%02x:%02x:%02x",
-        packet -> eh -> ether_dhost[0],
-        packet -> eh -> ether_dhost[1],
-        packet -> eh -> ether_dhost[2],
-        packet -> eh -> ether_dhost[3],
-        packet -> eh -> ether_dhost[4],
-        packet -> eh -> ether_dhost[5]
-    );
-
-    snprintf(shost, sizeof(shost), "%02x:%02x:%02x:%02x:%02x:%02x",
-        packet -> eh -> ether_shost[0],
-        packet -> eh -> ether_shost[1],
-        packet -> eh -> ether_shost[2],
-        packet -> eh -> ether_shost[3],
-        packet -> eh -> ether_shost[4],
-        packet -> eh -> ether_shost[5]
-    );
-
-    printf("-*-*-*-*- Ethernet -*-*-*-*-\n");
-    printf("destionation : %s\n", dhost);
-    printf("source       : %s\n", shost);
-    printf("type         : %d\n\n", packet -> eh -> ether_type);
-}
-
-```
-
-<<<
- 
 
                 </section>
             </div>
