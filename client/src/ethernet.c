@@ -22,8 +22,8 @@ int Send(int soc){
     struct ether_header eh;
 
     // パケットの初期化
-    sprintf(eh.ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
-    sprintf(eh.ether_shost, "\x64\x80\x99\x4f\x20\xf4");
+    sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
+    sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
     eh.ether_type = (u_int16_t)8;
 
     GenerateEthernetPacket(&packet, &eh);
