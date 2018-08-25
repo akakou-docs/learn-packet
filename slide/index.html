@@ -1969,6 +1969,164 @@ void PrintData(Packet *packet){
 
 ```
 
+<<<
+
+## UDPパケットを
+## 送信してみる
+
+>>>
+
+### 手順
+Ethernet、IPと違いなし。
+
+#### 1. パケットの作成　　　　　　
+#### 2. 解析して構造体に落とし込む
+#### 3. パケットの表示　　　　　　
+
+>>>
+
+### コード
+
+client/src/udp.c
+
+```c
+/**
+ * @brief 実際のパケットの受取部
+ * @param (soc) ソケット
+ * @return 成功したら1, 失敗したら-1
+ */
+int Send(int soc){
+    // 変数の宣言
+    int size;
+    struct ether_header eh;
+
+    Packet packet;
+
+    // シードをセット
+    srand(time(NULL));
+
+    // パケットの初期化
+    // Data
+    unsigned char data[] = "hello world";
+
+    // Ethernet
+    sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
+    sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
+    eh.ether_type = (u_int16_t)8;
+    
+    // IP
+    int over_eh_size =  
+            + sizeof(struct iphdr) 
+            + sizeof(struct udphdr) 
+            + sizeof(data);
+
+    struct iphdr ip = {
+        sizeof(struct iphdr) / 4,
+        4,
+        (u_int8_t)0,
+        (u_int16_t)htons(over_eh_size),
+        (u_int16_t)htons(rand() % 0x10000),
+        (u_int16_t)0,
+        (u_int8_t)1,
+        (u_int8_t)17,
+        (u_int16_t)0x00,
+        (u_int32_t)0x00,
+        (u_int32_t)0x00        
+    };
+
+    inet_pton(AF_INET, "192.168.10.112", &(ip.saddr));
+    inet_pton(AF_INET, "192.168.10.112", &(ip.daddr));
+
+    ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
+
+    // udp
+    struct udphdr udp = {
+        (u_int16_t)ntohs(rand() % 0x50000),
+        (u_int16_t)ntohs(8080),
+        (u_int16_t)ntohs(sizeof(udp) + sizeof(data)),
+        (u_int16_t)0x00
+    };
+
+    // 実体の生成
+    GenerateEthernetPacket(&packet, &eh);
+    AddIPHeader(&packet, &ip);
+    AddUDPHeader(&packet, &udp);
+    AddData(&packet, data, sizeof(data));
+
+    // 表示
+    printf("text:\n");
+    PrintEthernet(&packet);
+    PrintIP(&packet);
+    PrintUDP(&packet);
+    PrintData(&packet);
+    PrintString(&packet);
+
+    printf("binary:\n");
+    PrintRawEthernet(&packet);
+    PrintRawIP(&packet);
+    PrintRawUDP(&packet);
+    PrintRawData(&packet);
+    PrintRawPacket(&packet);
+
+
+    // パケットの読み込み
+    if((size = write(soc, packet.ptr, packet.size)) <= 0){
+        // 失敗したらエラーを開く
+        perror("write");
+        return -1;
+    }
+
+    FreePacket(&packet);
+
+    return 0;
+}
+```
+
+>>>
+
+### コード（パケットの作成）
+
+lib/generate.c
+
+```c
+void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
+    size_t size = sizeof(struct ether_header);
+    packet -> ptr = (unsigned char *)malloc(size);
+    packet -> eh = (struct ether_header *)packet -> ptr;
+    memcpy(packet -> eh, eh, sizeof(struct ether_header));
+    packet -> size = sizeof(struct ether_header);
+}
+
+void AddIPHeader(Packet *packet, struct iphdr *ip) {
+    size_t size = sizeof(struct iphdr);
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> ip = (struct iphdr *)(packet -> ptr + packet -> size);
+    memcpy(packet -> ip, ip, sizeof(struct iphdr));
+    packet -> size = size + packet -> size;
+}
+
+void AddUDPHeader(Packet *packet, struct udphdr *udp) {
+    size_t size = sizeof(struct udphdr);
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> udp = (struct udphdr *)(packet -> ptr + packet -> size);
+    memcpy(packet -> udp, udp, sizeof(struct udphdr));
+    packet -> size = size + packet -> size;
+}
+
+```
+
+>>>
+
+### メモリ開放
+Ethernet、IPのときと同じ
+
+lib/generate.c
+
+```c
+void FreePacket(Packet *packet) {
+    free(packet -> ptr);
+}
+```
 
 
 
