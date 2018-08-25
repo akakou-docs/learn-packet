@@ -687,6 +687,45 @@ void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
 
 ```
 
+<<<
+
+## 送信したパケットを解析
+
+>>>
+
+### C言語だと
+
+```c
+    sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
+    sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
+    eh.ether_type = (u_int16_t)8;
+```
+
+>>>
+
+### イーサネットのフレーム（パケット）
+
+| 名前 | 値| 詳細 |
+|---|---|---|
+| 宛先MACアドレス | 00:00:00:00:00:00 | 宛先のMACアドレス |
+| 送信元MACアドレス | 00:00:00:00:00:00 | 送信元MACアドレス |
+| タイプ | 2 | 上位プロトコルはIP |
+
+
+>>>
+
+### wiresharkでみる
+
+![](./img/ethernet.png)
+
+>>>
+
+### wiresharkでみる
+
+![](./img/ethernet1.png)
+
+<<<
+
 
 
                 </section>
