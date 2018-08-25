@@ -24,7 +24,6 @@ int Send(int soc){
     struct ether_header eh;
 
     Packet packet;
-    packet.eh = &eh;
 
     // シードをセット
     srand(time(NULL));
@@ -32,26 +31,23 @@ int Send(int soc){
     // パケットの初期化
     // Data
     unsigned char data[] = "hello world";
-    packet.data = data;
-    packet.data_size = sizeof(data);
-
-    // パケット全体のサイズ
-    packet.size = sizeof(struct ether_header) 
-            + sizeof(struct iphdr) 
-            + sizeof(struct udphdr) 
-            + packet.data_size;
 
     // Ethernet
-    sprintf(packet.eh -> ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
-    sprintf(packet.eh -> ether_shost, "\x64\x80\x99\x4f\x20\xf4");
-    packet.eh -> ether_type = (u_int16_t)8;
+    sprintf(eh.ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
+    sprintf(eh.ether_shost, "\x64\x80\x99\x4f\x20\xf4");
+    eh.ether_type = (u_int16_t)8;
     
     // IP
+    int over_eh_size =  
+            + sizeof(struct iphdr) 
+            + sizeof(struct udphdr) 
+            + sizeof(data);
+
     struct iphdr ip = {
         sizeof(struct iphdr) / 4,
         4,
         (u_int8_t)0,
-        (u_int16_t)htons(packet.size - sizeof(struct ether_header)),
+        (u_int16_t)htons(over_eh_size),
         (u_int16_t)htons(rand() % 0x10000),
         (u_int16_t)htons(0b0100000000000000),// + (rand() % 0x100)),
         (u_int8_t)1,
@@ -66,42 +62,34 @@ int Send(int soc){
 
     ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
-    packet.ip = &ip;
-
     // udp
     struct udphdr udp = {
         (u_int16_t)ntohs(rand() % 0x50000),
         (u_int16_t)ntohs(8080),
-        (u_int16_t)ntohs(sizeof(udp) + packet.data_size),
+        (u_int16_t)ntohs(sizeof(udp) + sizeof(data)),
         (u_int16_t)0x00
     };
-    packet.udp = &udp;
 
-    GeneratePacketBuffer(&packet);
+    // 実体の生成
+    GenerateEthernetPacket(&packet, &eh);
+    AddIPHeader(&packet, &ip);
+    AddUDPHeader(&packet, &udp);
+    AddData(&packet, data, sizeof(data));
 
     // 表示
     printf("text:\n");
     PrintEthernet(&packet);
-    if (htons(packet.eh -> ether_type) == ETHERTYPE_IP) {
-        PrintIP(&packet);
-
-        if (packet.ip -> protocol == IPPROTO_UDP && packet.udp != NULL) {
-            PrintUDP(&packet);
-        }
-    }
+    PrintIP(&packet);
+    PrintUDP(&packet);
     PrintData(&packet);
 
-    printf("binary\n");
+    printf("binary:\n");
     PrintRawEthernet(&packet);
-    if (htons(packet.eh -> ether_type) == ETHERTYPE_IP) {
-        PrintRawIP(&packet);
-
-        if (packet.ip -> protocol == IPPROTO_UDP && packet.udp != NULL) {
-            PrintRawUDP(&packet);
-        }
-        PrintRawData(&packet);
-    }
+    PrintRawIP(&packet);
+    PrintRawUDP(&packet);
+    PrintRawData(&packet);
     PrintRawPacket(&packet);
+
 
     // パケットの読み込み
     if((size = write(soc, packet.ptr, packet.size)) <= 0){
@@ -110,7 +98,7 @@ int Send(int soc){
         return -1;
     }
 
-    free(packet.ptr);
+    FreePacket(&packet);
 
     return 0;
 }

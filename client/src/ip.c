@@ -21,19 +21,18 @@
 int Send(int soc){
     // 変数の宣言
     int size;
-    struct ether_header eh;
-
     Packet packet;
-    packet.eh = &eh;
+
+    struct ether_header eh;
 
     // シードをセット
     srand(time(NULL));
 
     // パケットの初期化
     // Ethernet
-    sprintf(packet.eh -> ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
-    sprintf(packet.eh -> ether_shost, "\x64\x80\x99\x4f\x20\xf4");
-    packet.eh -> ether_type = (u_int16_t)8;
+    sprintf(eh.ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
+    sprintf(eh.ether_shost, "\x64\x80\x99\x4f\x20\xf4");
+    eh.ether_type = (u_int16_t)8;
     
     // IP
     struct iphdr ip = {
@@ -57,23 +56,26 @@ int Send(int soc){
 
     packet.ip = &ip;
 
-    GeneratePacketBuffer(&packet);
+    // パケットの実態の生成
+    GenerateEthernetPacket(&packet, &eh);
+    AddIPHeader(&packet, &ip);
 
+    // パケットの表示
     PrintEthernet(&packet);
     PrintIP(&packet);
-
     PrintRawEthernet(&packet);    
     PrintRawIP(&packet);
     PrintRawPacket(&packet);
 
-    // パケットの読み込み
+    // パケットの送信
     if((size = write(soc, packet.ptr, packet.size)) <= 0){
         // 失敗したらエラーを開く
         perror("write");
         return -1;
     }
 
-    free(packet.ptr);
+    // パケットの開放
+    FreePacket(&packet);
 
     return 0;
 }

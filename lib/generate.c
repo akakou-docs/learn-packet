@@ -14,45 +14,47 @@
 #include <netpacket/packet.h>
 
 
-
-/**
- * @brief bufの生成
- * @param (packet) パケットの構造体
- */
-void GeneratePacketBuffer(Packet *packet){
-    // イーサネットヘッダのコピー 
-    unsigned char *buf = (unsigned char *)malloc(packet -> size);
-    packet -> ptr = buf;
-
-    memcpy(buf, packet -> eh, sizeof(struct ether_header));
-    packet -> eh = (struct ether_header *)buf;
-    buf += sizeof(struct ether_header);
-
-    // IPヘッダのコピー
-    if (packet -> ip != NULL) {
-        memcpy(buf, packet -> ip, sizeof(struct iphdr));
-        packet -> ip = (struct iphdr *)buf;
-    
-        buf += sizeof(struct iphdr);
-
-        // UDPヘッダのコピー
-        if (packet -> udp != NULL) {
-            memcpy(buf, packet -> udp, sizeof(struct udphdr));
-            packet -> udp = (struct udphdr *)buf;
-            buf += sizeof(struct udphdr);
-        }
-        // TCPヘッダのコピー
-        else if (packet -> tcp != NULL) {
-            memcpy(buf, packet -> tcp, sizeof(struct tcphdr));
-            packet -> tcp = (struct tcphdr *)buf;
-            buf += sizeof(struct tcphdr);
-        }
-    }
-
-    // Dataのコピー
-    if (packet -> data != NULL) {
-        memcpy(buf, packet -> data, packet -> data_size);
-        packet -> data = buf;
-    }
+void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
+    size_t size = sizeof(struct ether_header);
+    packet -> ptr = (unsigned char *)malloc(size);
+    packet -> eh = (struct ether_header *)packet -> ptr;
+    memcpy(packet -> eh, eh, sizeof(struct ether_header));
+    packet -> size = sizeof(struct ether_header);
 }
 
+void AddIPHeader(Packet *packet, struct iphdr *ip) {
+    size_t size = sizeof(struct iphdr);
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> ip = (struct iphdr *)(packet -> ptr + packet -> size);
+    memcpy(packet -> ip, ip, sizeof(struct iphdr));
+    packet -> size = size + packet -> size;
+}
+
+void AddUDPHeader(Packet *packet, struct udphdr *udp) {
+    size_t size = sizeof(struct udphdr);
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> udp = (struct udphdr *)(packet -> ptr + packet -> size);
+    memcpy(packet -> udp, udp, sizeof(struct udphdr));
+    packet -> size = size + packet -> size;
+}
+
+void AddTCPHeader(Packet *packet, struct tcphdr *tcp) {
+    size_t size = sizeof(struct tcphdr);
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> tcp = (struct tcphdr *)(packet -> ptr + packet -> size);
+    memcpy(packet -> tcp, tcp, sizeof(struct tcphdr));
+    packet -> size = size + packet -> size;
+}
+
+void AddData(Packet *packet, unsigned char *data, size_t size) {
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> data = (unsigned char *)(packet -> ptr + packet -> size);
+    packet -> data_size = size;
+    memcpy(packet -> data, data, size);
+    packet -> size = size + packet -> size;
+}
+
+void FreePacket(Packet *packet) {
+    free(packet -> ptr);
+    memset(packet, 0, sizeof(Packet));
+}

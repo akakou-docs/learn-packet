@@ -17,18 +17,16 @@
  */
 int Send(int soc){
     // 変数の宣言
+    Packet packet;
     int size;
     struct ether_header eh;
 
-    Packet packet;
-    packet.eh = &eh;
-
     // パケットの初期化
-    sprintf(packet.eh -> ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
-    sprintf(packet.eh -> ether_shost, "\x64\x80\x99\x4f\x20\xf4");
-    packet.eh -> ether_type = (u_int16_t)8;
+    sprintf(eh.ether_dhost, "\x64\x80\x99\x4f\x20\xf4");
+    sprintf(eh.ether_shost, "\x64\x80\x99\x4f\x20\xf4");
+    eh.ether_type = (u_int16_t)8;
 
-    GeneratePacketBuffer(&packet);
+    GenerateEthernetPacket(&packet, &eh);
 
     PrintEthernet(&packet);
     PrintRawPacket(&packet);
@@ -40,7 +38,8 @@ int Send(int soc){
         return -1;
     }
 
-    free(packet.ptr);
+    // パケットの開放
+    FreePacket(&packet);
 
     return 0;
 }
