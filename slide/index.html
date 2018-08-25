@@ -76,7 +76,7 @@
 
 >>>
 
-# 画面
+![](./img/wireshark.png)
 
 >>>
 
@@ -261,7 +261,7 @@ ISOによって制定された。
 
 ### raw_socketの準備の仕方
 
-lib/netutils.h InitRawSocket
+lib/netutils.h
 
 >>>
 
@@ -273,24 +273,9 @@ lib/netutils.h InitRawSocket
 
 >>>
 
-### コード(Initraw_socket)
+### コード(ソケットの用意）
 
 ```c
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <linux/if.h>
-#include <net/ethernet.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
-#include <netpacket/packet.h>
-#include <netinet/if_ether.h>
-
-
 /**
  * @brief RAWソケットを準備する
  * @param (device) ネットワークインターフェース名
@@ -733,12 +718,6 @@ void FreePacket(Packet *packet) {
 ### wiresharkでみる
 
 ![](./img/ethernet.png)
-
->>>
-
-### wiresharkでみる
-
-![](./img/ethernet1.png)
 
 <<<
 
@@ -2971,7 +2950,177 @@ void FreePacket(Packet *packet) {
 }
 ```
 
+
 <<<
+
+## 送信したTCPパケットを解析
+
+>>>
+
+### C言語だと
+
+```c
+// シードをセット
+srand(time(NULL));
+
+// パケットの初期化
+// Data
+unsigned char data[] = "hi";
+packet.data = data;
+packet.data_size = sizeof(data);
+
+// Ethernet
+sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
+sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
+eh.ether_type = (u_int16_t)8;
+
+// IP
+int over_eh_size =  
+        + sizeof(struct iphdr) 
+        + sizeof(struct tcphdr) 
+        + sizeof(data);
+
+struct iphdr ip = {
+    sizeof(struct iphdr) / 4,
+    4,
+    (u_int8_t)0,
+    (u_int16_t)htons(over_eh_size),
+    (u_int16_t)htons(rand() % 0x10000),
+    (u_int16_t)htons(0b0100000000000000),// + (rand() % 0x100)),
+    (u_int8_t)1,
+    (u_int8_t)IPPROTO_TCP,
+    (u_int16_t)0x00,
+    (u_int32_t)0x00,
+    (u_int32_t)0x00        
+};
+
+inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
+inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
+
+ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
+
+// tcp
+int offset = sizeof(struct tcphdr) / 4;
+
+struct tcphdr tcp = {
+    (u_int16_t)htons(rand() % 0x50000),
+    (u_int16_t)htons(8080),
+    (u_int32_t)htons(0),
+    (u_int32_t)0,
+    (u_int8_t)0,
+    (u_int8_t)htons(offset),
+    (u_int8_t)TH_SYN,
+    (u_int16_t)htons(500),
+    (u_int16_t)0,
+    (u_int16_t)0,
+ };
+
+
+// 実体の生成
+GenerateEthernetPacket(&packet, &eh);
+AddIPHeader(&packet, &ip);
+AddTCPHeader(&packet, &tcp);
+AddData(&packet, data, sizeof(data));
+
+```
+
+>>>
+
+### Ethernetのフレーム
+前回と変わらず
+
+| 名前 | 値| 詳細 |
+|---|---|---|
+| 宛先MACアドレス | 00:00:00:00:00:00 | 宛先のMACアドレス |
+| 送信元MACアドレス | 00:00:00:00:00:00 | 送信元MACアドレス |
+| タイプ | 8 | 上位プロトコルはIP |
+
+>>>
+
+### IPのパケット
+
+| 名前 | 値 | 詳細 |
+|---|---|---|
+| version | 4 | IPv4 |
+| ihl | iphdrのサイズ / 4 | optionはなし |
+| tos | 0 | パケットの優先順位 |
+| tot_len | iphdrのサイズ | データがない、※ |
+
+※リトルエンディアン
+
+>>>
+
+### IPのパケット
+
+| 名前 | 値 | 詳細 |
+|---|---|---|
+| id | ランダム | ※ |
+| frag_off | 0b010000000000000000000XX | Don't Fragment |
+| ttl | 1 | 1回のみ経由可能 |
+
+※リトルエンディアン
+
+>>>
+
+### IPのパケット
+
+| 名前 | 値 | 詳細 |
+|---|---|---|
+| protocol | 17 | 上位プロトコルはTCP |
+| check | チェックサム | チェックサム |
+| saddr | 127.0.0.1 | 送信元IPアドレス |
+| daddr | 127.0.0.1 | 送信先IPアドレス |
+
+※リトルエンディアン
+
+>>>
+
+### TCPのパケット
+
+| 名前 | 値 | 詳細 |
+|---|---|---|
+| th_sport | ランダム | 送信元port |
+| th_dport | 8080 | 宛先port |
+| th_seq | 0 | シーケンス番号 |
+
+※リトルエンディアン
+
+>>>
+
+### TCPのパケット
+
+| 名前 | 値 | 詳細 |
+|---|---|---|
+| th_ack | 0 | ※、確認応答番号 |
+| th_off | tcpのヘッダサイズ / 4 | オフセット |
+| th_x2 | 0 | 未使用 |
+
+>>>
+
+### TCPのパケット
+
+| 名前 | 値 | 詳細 |
+|---|---|---|
+| th_flags | TH_SYN | SYNパケット |
+| th_win | 500 | ウィンドウサイズ |
+| th_sum | チェックサム | チェックサム |
+| th_urp | 0 | 緊急情報のポインタ |
+
+>>>
+
+### WIRESHARKでみる
+
+![](./img/tcp.png)
+
+>>>
+
+### WIRESHARKでみる
+
+![](./img/tcp1.png)
+<<<
+
+
+
 
 
                 </section>

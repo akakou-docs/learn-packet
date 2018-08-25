@@ -25,7 +25,6 @@ int Send(int soc){
     
     int size;
     Packet packet;
-    packet.eh = &eh;
 
     // シードをセット
     srand(time(NULL));
@@ -73,9 +72,9 @@ int Send(int soc){
         (u_int16_t)htons(rand() % 0x50000),
         (u_int16_t)htons(8080),
         (u_int32_t)htons(0),
-        (u_int32_t)0,
+        (u_int32_t)htons(0),
         (u_int8_t)0,
-        (u_int8_t)htons(offset),
+        (u_int8_t)offset,
         (u_int8_t)TH_SYN,
         (u_int16_t)htons(500),
         (u_int16_t)0,
@@ -88,7 +87,6 @@ int Send(int soc){
     AddIPHeader(&packet, &ip);
     AddTCPHeader(&packet, &tcp);
     AddData(&packet, data, sizeof(data));
-
 
     // 表示
     printf("text:\n");
