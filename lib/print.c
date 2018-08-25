@@ -1,7 +1,6 @@
 #include "print.h"
 
 #include "base.h"
-#include "list.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -239,31 +238,3 @@ void PrintData(Packet *packet){
     printf("\n\n");
 }
 
-int PrintDataStream(Segment *segment) {
-    printf("-*-*-* Protocol Stream *-*-*-\n");
-
-    if (segment -> start == NULL || segment -> end == NULL) {
-        return -1;
-    }
-
-    InitIterater(segment);
-    while(1) {
-        ElementOfSegment *element = Iterate();
-
-        if (element == NULL) {
-            break;
-        }
-
-        RawPacket raw_packet = {
-            element -> packet -> data,
-            element -> packet -> data_size
-        };
-
-        PrintString(raw_packet);
-    }
-
-    printf("\n\n");
-
-    
-    return 0;
-}

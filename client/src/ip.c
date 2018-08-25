@@ -1,7 +1,6 @@
 #include "../../lib/base.h"
 #include "../../lib/netutils.h"
 #include "../../lib/checksum.h"
-#include "../../lib/list.h"
 #include "../../lib/generate.h"
 #include "../../lib/print.h"
 

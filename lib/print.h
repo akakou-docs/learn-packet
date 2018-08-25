@@ -11,5 +11,3 @@ void PrintIP(Packet *packet);
 void PrintUDP(Packet *packet);
 void PrintTCP(Packet *packet);
 void PrintData(Packet *packet);
-int PrintDataStream(Segment *segment) ;
-    

@@ -6,7 +6,6 @@
 #include "../../lib/base.h"
 #include "../../lib/netutils.h"
 #include "../../lib/checksum.h"
-#include "../../lib/list.h"
 #include "../../lib/analyze.h"
 #include "../../lib/print.h"
 
