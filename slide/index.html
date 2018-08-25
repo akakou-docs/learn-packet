@@ -466,6 +466,8 @@ raw_socket側では宛先MACアドレス、
 
 ### コード
 
+server/src/ethernet.c
+
 ```c
 int Serv(int soc){
     // 変数の宣言
@@ -496,6 +498,8 @@ int Serv(int soc){
 >>>
 
 ### コード（パケットの解析）
+
+lib/analyze.c
 
 ```c
 /**
@@ -560,6 +564,8 @@ int AnalyzePacket(Packet *packet){
 
 ### パケット表示
 
+lib/print.c
+
 ```c
 /**
  * @brief パケットのバイナリを表示
@@ -576,14 +582,8 @@ void PrintRawPacket(Packet *packet){
     PrintBinary(raw_packet);
 }
 
-```
+// 省略
 
->>>
-
-### パケット表示
-
-
-```c
 /**
  * @brief イーサネットを表示する
  * @param (packet) パケット
@@ -615,7 +615,6 @@ void PrintEthernet(Packet *packet){
     printf("source       : %s\n", shost);
     printf("type         : %d\n\n", packet -> eh -> ether_type);
 }
-
 ```
 
 <<<
@@ -689,6 +688,20 @@ void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
 
 ```
 
+>>>
+
+### メモリ開放
+ヒープを開放する
+
+lib/generate.c
+
+```c
+void FreePacket(Packet *packet) {
+    free(packet -> ptr);
+}
+```
+
+
 <<<
 
 ## 送信したパケットを解析
@@ -744,7 +757,8 @@ void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
 ### IPとは
 
 インターネットにおいてパケットを  
-中継するのに使われるパケット。
+中継するのに使われるプロトコル。
+OSI参照モデルの第三層について規定している。
 
 >>>
 
@@ -802,8 +816,338 @@ struct iphdr
   };
 ```
 
+<<<
+
+## IPパケットを
+## 受信してみる
+
 >>>
 
+### 手順
+Ethernetと違いなし。  
+
+#### 1. パケットの受け取り　　　　
+#### 2. 解析して構造体に落とし込む
+#### 3. パケットの表示　　　　　　
+
+
+>>>
+### コード
+
+server/src/ip.c
+
+```c
+/**
+ * @brief 実際のパケットの受取部
+ * @param (soc) ソケット
+ * @return 成功したら1, 失敗したら-1
+ */
+int Serv(int soc){
+   // 変数の宣言
+    Packet packet;
+    unsigned char buf[2048];
+
+    // パケットの読み込み
+    if((packet.size = read(soc, buf, sizeof(buf))) <= 0){
+        // 失敗したらエラーを開く
+        perror("read");
+        return -1;
+    }
+
+    packet.ptr = buf;
+
+    // パケットを構造体に当てはめる
+    AnalyzePacket(&packet);
+
+    // 表示
+    printf("text:\n");
+    PrintEthernet(&packet);
+    if (htons(packet.eh -> ether_type) == ETHERTYPE_IP) {
+        PrintIP(&packet);
+    }
+
+    printf("binary\n");
+    PrintRawEthernet(&packet);
+    if (htons(packet.eh -> ether_type) == ETHERTYPE_IP) {
+        PrintRawIP(&packet);
+    }
+    PrintRawPacket(&packet);
+
+    return 0;
+}
+```
+
+>>>
+
+### コード（パケットの解析）
+
+lib/analyze.c
+
+```
+/**
+ * @brief IPパケットの解析
+ * @param (packet) パケットの構造体
+ * @param (lest_packet) パケットのバイナリデータを持つ構造体
+ */
+int AnalyzeIPPacket(Packet *packet, RawPacket *lest_packet){
+    // 読み込んだ部分からのポインタ
+    unsigned char *ptr = lest_packet -> buf;
+    
+    // 読み込んでない残りのサイズ
+    int lest = lest_packet -> lest;
+    
+    // ipのパケットの構造体を宣言
+    struct iphdr *iphdr;
+
+    // オプション
+    unsigned char *option;
+
+    // オプションの長さ、パケッtの長さ
+    int optionLen, len;
+    
+    // チェックサム
+    unsigned short sum;
+
+    // 構造体のサイズ分データがあるかのチェック
+    if(lest < sizeof(struct iphdr)){
+        // sizeが不足した場合にエラーを吐く
+        fprintf(stderr, "lest(%d)<sizeof(struct iphdr)\n", lest);
+        return -1;
+    }
+
+    // ptrをiphdrに無理やりキャストして代入
+    iphdr = (struct iphdr *)ptr;
+    
+    // ptrにパケットのデータ部を代入
+    ptr += sizeof(struct iphdr);
+    
+    // lestにパケットのデータサイズを代入
+    lest -= sizeof(struct iphdr);
+
+    // オプションの大きさ(IPヘッダ長を4で割った値 * 4 - ヘッダの大きさ)を格納
+    optionLen = iphdr -> ihl * 4 - sizeof(struct iphdr);
+    if(optionLen > 0){
+        if(optionLen >= 1500){
+            // オプションのサイズが大きすぎたらエラーを吐く
+            fprintf(stderr, "IP optionLen(%d):too big\n", optionLen);
+            return -1;
+        }
+        // サイズがちょうどよかったら
+        // ptrの値をoption に代入
+        option = ptr;
+        // ptrをoptionLen分読み進める
+        ptr += optionLen;
+        // lestをoptionLen分減らす
+        lest -= optionLen;
+    }
+
+    // IPのチェックサムの確認
+    if(checkIPchecksum(iphdr, option, optionLen) == 0){
+        // チェックサムを見てパケットが壊れたら、エラーを吐く
+        fprintf(stderr, "bad ip checksum\n");
+        return -1;
+    }
+
+    // バッファのポインタをコピー
+    lest_packet -> buf = ptr;
+
+    // 残りサイズをコピー
+    lest_packet -> lest = lest;
+    
+    // IPヘッダをコピー
+    packet -> ip = iphdr;
+
+    return 0;
+}
+
+// 省略
+
+/**
+ * @brief パケットの解析
+ * @param (packet) パケットの構造体
+ * @param (lest_packet) パケットのバイナリデータを持つ構造体
+ */
+int AnalyzePacket(Packet *packet){
+    RawPacket lest_packet = {
+        packet -> ptr,
+        packet -> size
+    };
+
+    AnalyzeEtherPacket(packet, &lest_packet);
+
+    if (htons(packet -> eh -> ether_type) == ETHERTYPE_IP){
+        if (AnalyzeIPPacket(packet, &lest_packet) == -1){
+            return -1;
+        }
+
+        // 省略
+
+    }
+
+    // 省略
+
+    return 0;
+}
+```
+
+>>>
+
+### パケット表示
+lib/print.c
+
+```
+/**
+ * @brief イーサネットパケットの解析
+ * @param (packet) パケットの構造体
+ * @param (lest_packet) パケットのバイナリデータを持つ構造体
+ */
+int AnalyzeEtherPacket(Packet *packet, RawPacket *lest_packet){
+    // 残りポインタ
+    unsigned char *ptr = lest_packet -> buf;
+
+    // 残りのサイズ
+    int lest = lest_packet -> lest;
+
+    if(lest < sizeof(struct ether_header)) {
+        // デバッグしてデバイスナンバートサイズを表示
+        return -1;
+    }
+
+    // パケットのポインタをイーサネットに
+    // 無理やりキャストして代入
+    packet -> eh = (struct ether_header *)ptr;
+
+    // ポインタを読んだ分まで加算
+    ptr += sizeof(struct ether_header);
+
+    // 残りサイズを読んだ分減算
+    lest -= sizeof(struct ether_header);
+
+    // バッファのポインタをコピー
+    lest_packet -> buf = ptr;
+
+    // 残りサイズをコピー
+    lest_packet -> lest = lest;
+
+    return 0;
+}
+
+/**
+ * @brief IPパケットの解析
+ * @param (packet) パケットの構造体
+ * @param (lest_packet) パケットのバイナリデータを持つ構造体
+ */
+int AnalyzeIPPacket(Packet *packet, RawPacket *lest_packet){
+    // 読み込んだ部分からのポインタ
+    unsigned char *ptr = lest_packet -> buf;
+    
+    // 読み込んでない残りのサイズ
+    int lest = lest_packet -> lest;
+    
+    // ipのパケットの構造体を宣言
+    struct iphdr *iphdr;
+
+    // オプション
+    unsigned char *option;
+
+    // オプションの長さ、パケッtの長さ
+    int optionLen, len;
+    
+    // チェックサム
+    unsigned short sum;
+
+    // 構造体のサイズ分データがあるかのチェック
+    if(lest < sizeof(struct iphdr)){
+        // sizeが不足した場合にエラーを吐く
+        fprintf(stderr, "lest(%d)<sizeof(struct iphdr)\n", lest);
+        return -1;
+    }
+
+    // ptrをiphdrに無理やりキャストして代入
+    iphdr = (struct iphdr *)ptr;
+    
+    // ptrにパケットのデータ部を代入
+    ptr += sizeof(struct iphdr);
+    
+    // lestにパケットのデータサイズを代入
+    lest -= sizeof(struct iphdr);
+
+    // オプションの大きさ(IPヘッダ長を4で割った値 * 4 - ヘッダの大きさ)を格納
+    optionLen = iphdr -> ihl * 4 - sizeof(struct iphdr);
+    if(optionLen > 0){
+        if(optionLen >= 1500){
+            // オプションのサイズが大きすぎたらエラーを吐く
+            fprintf(stderr, "IP optionLen(%d):too big\n", optionLen);
+            return -1;
+        }
+        // サイズがちょうどよかったら
+        // ptrの値をoption に代入
+        option = ptr;
+        // ptrをoptionLen分読み進める
+        ptr += optionLen;
+        // lestをoptionLen分減らす
+        lest -= optionLen;
+    }
+
+    // IPのチェックサムの確認
+    if(checkIPchecksum(iphdr, option, optionLen) == 0){
+        // チェックサムを見てパケットが壊れたら、エラーを吐く
+        fprintf(stderr, "bad ip checksum\n");
+        return -1;
+    }
+
+    // バッファのポインタをコピー
+    lest_packet -> buf = ptr;
+
+    // 残りサイズをコピー
+    lest_packet -> lest = lest;
+    
+    // IPヘッダをコピー
+    packet -> ip = iphdr;
+
+    return 0;
+}
+
+// 省略
+
+/**
+ * @brief パケットの解析
+ * @param (packet) パケットの構造体
+ * @param (lest_packet) パケットのバイナリデータを持つ構造体
+ */
+int AnalyzePacket(Packet *packet){
+    RawPacket lest_packet = {
+        packet -> ptr,
+        packet -> size
+    };
+    
+    AnalyzeEtherPacket(packet, &lest_packet);
+    
+    if (htons(packet -> eh -> ether_type) == ETHERTYPE_IP){
+        if (AnalyzeIPPacket(packet, &lest_packet) == -1){
+            return -1;
+        }
+
+        if (packet -> ip -> protocol == IPPROTO_UDP) {
+            if(AnalyzeUDPPacket(packet, &lest_packet) == -1) {
+                return -1;
+            }
+        }
+        
+        else if (packet -> ip -> protocol == IPPROTO_TCP) {
+            if(AnalyzeTCPPacket(packet, &lest_packet) == -1) {
+                return -1;
+            }
+        }
+    }
+
+    packet -> data = lest_packet.buf;
+    packet -> data_size = lest_packet.lest;
+
+    return 0;
+}
+
+```
 
 
 
