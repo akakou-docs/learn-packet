@@ -449,8 +449,138 @@ linux/if_ehter.h
 raw_socket側では宛先MACアドレス、  
 送信元MACアドレス、タイプしか扱わない
 
+<<<
 
+## Ethernetパケットを
+## 送信してみる
 
+>>>
+
+### 手順
+
+#### 1. イーサネットパケットの用意
+#### 2. パケットの用意（後に説明）
+#### 3. 送信
+#### 4. パケットの表示
+
+>>>
+
+### コード
+
+client/src/ethernet.c
+
+```c
+int Send(int soc){
+    // 変数の宣言
+    Packet packet;
+    int size;
+    struct ether_header eh;
+
+    // パケットの初期化
+    sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
+    sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
+    eh.ether_type = (u_int16_t)8;
+
+    GenerateEthernetPacket(&packet, &eh);
+
+    PrintEthernet(&packet);
+    PrintRawPacket(&packet);
+
+    // パケットの読み込み
+    if((size = write(soc, packet.ptr, packet.size)) <= 0){
+        // 失敗したらエラーを開く
+        perror("write");
+        return -1;
+    }
+
+    // パケットの開放
+    FreePacket(&packet);
+
+    return 0;
+}
+
+```
+
+>>>
+
+### コード（ヒープへの移動）
+ether_headerをヒープに移動します。  
+（理由は後に説明）
+
+```c
+void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
+    size_t size = sizeof(struct ether_header);
+    packet -> ptr = (unsigned char *)malloc(size);
+    packet -> eh = (struct ether_header *)packet -> ptr;
+    memcpy(packet -> eh, eh, sizeof(struct ether_header));
+    packet -> size = sizeof(struct ether_header);
+}
+
+```
+
+>>>
+
+### パケット表示
+
+```c
+void PrintData(Packet *packet){
+    printf("-*-*-*-*-   DATA   -*-*-*-*-\n");
+    if (packet -> data_size <= 0) {
+        return;
+    }
+
+    RawPacket raw_packet = {
+        packet -> data,
+        packet -> data_size
+    };
+
+    PrintString(raw_packet);
+    printf("\n\n");
+}
+
+```
+
+>>>
+
+### パケット表示
+
+```c
+/**
+ * @brief イーサネットを表示する
+ * @param (packet) パケット
+ */
+void PrintEthernet(Packet *packet){
+    char dhost[19];
+    char shost[19];
+
+    snprintf(dhost, sizeof(dhost), "%02x:%02x:%02x:%02x:%02x:%02x",
+        packet -> eh -> ether_dhost[0],
+        packet -> eh -> ether_dhost[1],
+        packet -> eh -> ether_dhost[2],
+        packet -> eh -> ether_dhost[3],
+        packet -> eh -> ether_dhost[4],
+        packet -> eh -> ether_dhost[5]
+    );
+
+    snprintf(shost, sizeof(shost), "%02x:%02x:%02x:%02x:%02x:%02x",
+        packet -> eh -> ether_shost[0],
+        packet -> eh -> ether_shost[1],
+        packet -> eh -> ether_shost[2],
+        packet -> eh -> ether_shost[3],
+        packet -> eh -> ether_shost[4],
+        packet -> eh -> ether_shost[5]
+    );
+
+    printf("-*-*-*-*- Ethernet -*-*-*-*-\n");
+    printf("destionation : %s\n", dhost);
+    printf("source       : %s\n", shost);
+    printf("type         : %d\n\n", packet -> eh -> ether_type);
+}
+
+```
+
+<<<
+ 
 
                 </section>
             </div>
