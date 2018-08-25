@@ -2878,6 +2878,189 @@ void PrintData(Packet *packet){
 
 ```
 
+<<<
+
+## TCPパケットを
+## 送信してみる
+
+>>>
+
+### 手順
+単体での送信はEthernet、IP、UDPと違いはない。  
+しかし実際の通信では、複数のパケットにまたがって通信し、
+通信の最初に3way-handshakeが行われる。
+
+#### 1. パケットの作成　　　　　　
+#### 2. 解析して構造体に落とし込む
+#### 3. パケットの表示　　　　　　
+
+>>>
+
+### コード
+
+client/src/tcp.c
+
+```c
+/**
+ * @brief 実際のパケットの受取部
+ * @param (soc) ソケット
+ * @return 成功したら1, 失敗したら-1
+ */
+int Send(int soc){
+    // 変数の宣言
+    struct ether_header eh;
+    
+    int size;
+    Packet packet;
+    packet.eh = &eh;
+
+    // シードをセット
+    srand(time(NULL));
+
+    // パケットの初期化
+    // Data
+    unsigned char data[] = "hi";
+    packet.data = data;
+    packet.data_size = sizeof(data);
+
+    // Ethernet
+    sprintf(eh.ether_dhost, "\x00\x00\x00\x00\x00\x00");
+    sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
+    eh.ether_type = (u_int16_t)8;
+    
+    // IP
+    int over_eh_size =  
+            + sizeof(struct iphdr) 
+            + sizeof(struct tcphdr) 
+            + sizeof(data);
+
+    struct iphdr ip = {
+        sizeof(struct iphdr) / 4,
+        4,
+        (u_int8_t)0,
+        (u_int16_t)htons(over_eh_size),
+        (u_int16_t)htons(rand() % 0x10000),
+        (u_int16_t)htons(0b0100000000000000),// + (rand() % 0x100)),
+        (u_int8_t)1,
+        (u_int8_t)IPPROTO_TCP,
+        (u_int16_t)0x00,
+        (u_int32_t)0x00,
+        (u_int32_t)0x00        
+    };
+
+    inet_pton(AF_INET, "127.0.0.1", &(ip.saddr));
+    inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
+
+    ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
+
+    // tcp
+    int offset = sizeof(struct tcphdr) / 4;
+
+    struct tcphdr tcp = {
+        (u_int16_t)htons(rand() % 0x50000),
+        (u_int16_t)htons(8080),
+        (u_int32_t)htons(0),
+        (u_int32_t)0,
+        (u_int8_t)0,
+        (u_int8_t)htons(offset),
+        (u_int8_t)TH_SYN,
+        (u_int16_t)htons(500),
+        (u_int16_t)0,
+        (u_int16_t)0,
+     };
+
+
+    // 実体の生成
+    GenerateEthernetPacket(&packet, &eh);
+    AddIPHeader(&packet, &ip);
+    AddTCPHeader(&packet, &tcp);
+    AddData(&packet, data, sizeof(data));
+
+
+    // 表示
+    printf("text:\n");
+    PrintEthernet(&packet);
+    PrintIP(&packet);
+    PrintTCP(&packet);
+    PrintData(&packet);
+
+    printf("binary:\n");
+    PrintRawEthernet(&packet);
+    PrintRawIP(&packet);
+    PrintRawTCP(&packet);
+    PrintRawData(&packet);
+    PrintRawPacket(&packet);
+
+    // パケットの読み込み
+    if((size = write(soc, packet.ptr, packet.size)) <= 0){
+        // 失敗したらエラーを開く
+        perror("write");
+        return -1;
+    }
+
+    FreePacket(&packet);
+
+    return 0;
+}
+
+```
+
+>>>
+
+### コード（パケットの作成）
+
+lib/generate.c
+
+```c
+void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
+    size_t size = sizeof(struct ether_header);
+    packet -> ptr = (unsigned char *)malloc(size);
+    packet -> eh = (struct ether_header *)packet -> ptr;
+    memcpy(packet -> eh, eh, sizeof(struct ether_header));
+    packet -> size = sizeof(struct ether_header);
+}
+
+void AddIPHeader(Packet *packet, struct iphdr *ip) {
+    size_t size = sizeof(struct iphdr);
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> ip = (struct iphdr *)(packet -> ptr + packet -> size);
+    memcpy(packet -> ip, ip, sizeof(struct iphdr));
+    packet -> size = size + packet -> size;
+}
+
+void AddTCPHeader(Packet *packet, struct tcphdr *tcp) {
+    size_t size = sizeof(struct tcphdr);
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> tcp = (struct tcphdr *)(packet -> ptr + packet -> size);
+    memcpy(packet -> tcp, tcp, sizeof(struct tcphdr));
+    packet -> size = size + packet -> size;
+}
+
+void AddData(Packet *packet, unsigned char *data, size_t size) {
+    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
+    packet -> data = (unsigned char *)(packet -> ptr + packet -> size);
+    packet -> data_size = size;
+    memcpy(packet -> data, data, size);
+    packet -> size = size + packet -> size;
+}
+
+```
+
+>>>
+
+### メモリ開放
+Ethernet、IP、UDPのときと同じ
+
+lib/generate.c
+
+```c
+void FreePacket(Packet *packet) {
+    free(packet -> ptr);
+}
+```
+
+<<<
+
 
                 </section>
             </div>
