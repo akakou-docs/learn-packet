@@ -81,12 +81,15 @@ int Send(int soc){
         (u_int16_t)0,
      };
 
-
     // 実体の生成
     GenerateEthernetPacket(&packet, &eh);
     AddIPHeader(&packet, &ip);
     AddTCPHeader(&packet, &tcp);
     AddData(&packet, data, sizeof(data));
+
+     // チェックサム
+    int len = ntohs(packet.ip -> tot_len) - packet.ip -> ihl * 4;
+    tcp.check = checksum3(packet.ip, (unsigned char *)packet.tcp, len);
 
     // 表示
     printf("text:\n");

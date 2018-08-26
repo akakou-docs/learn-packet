@@ -268,8 +268,8 @@ lib/netutils.h
 ### 手順
 
 1. socket関数を使って、ソケットを取得
-2. ioctl関数を使って、
-3. bind関数を使ってバインド（）する。
+2. ioctl関数を使って、インタフェース名からインタフェース番号を取得
+3. bind関数を使ってインタフェース番号をbindします。
 
 >>>
 
@@ -552,6 +552,33 @@ int AnalyzePacket(Packet *packet){
 lib/print.c
 
 ```c
+
+/**
+ * @brief バイナリを表示
+ * @param (raw_packet) パケット
+ */
+void PrintBinary(RawPacket raw_packet) {
+    int count = 0;
+    
+    printf("size:%d\n\n", raw_packet.lest);
+
+    // バイナリを表示する
+    while (0 < raw_packet.lest) {
+        printf("%02x ", *(raw_packet.buf));
+        raw_packet.buf += sizeof(unsigned char);
+        raw_packet.lest -= sizeof(unsigned char);
+        count ++;
+
+        if (count % 5 == 0) {
+            // バイナリ5つにうち1回
+            // 改行を入れる
+            putchar('\n');
+        }
+    }
+
+    puts("\n");
+}
+
 /**
  * @brief パケットのバイナリを表示
  * @param (packet) パケット
@@ -1050,23 +1077,6 @@ void PrintRawIP(Packet *packet){
 }
 
 /**
- * @brief UDPのバイナリを表示
- * @param (packet) パケット
- */
-void PrintRawUDP(Packet *packet){
-    RawPacket raw_packet = {
-        (unsigned char *)packet -> udp,
-        sizeof(struct udphdr)
-    };
-
-    printf("-*-*-*-*-   Raw UDP   -*-*-*-*-\n");
-
-    PrintBinary(raw_packet);
-}
-
-// 省略
-
-/**
  * @brief データ部のバイナリを表示
  * @param (packet) パケット
  */
@@ -1142,15 +1152,6 @@ void PrintIP(Packet *packet){
     printf("checksum         : %d\n", packet -> ip -> check);
     printf("destionation     : %s\n", daddr);
     printf("source           : %s\n\n", saddr);
-}
-
-void PrintUDP(Packet *packet) {
-    printf("-*-*-*-*-   UDP   -*-*-*-*-\n");
-
-    printf("source port      : %d\n", htons(packet -> udp -> uh_sport));
-    printf("destination port : %d\n", htons(packet -> udp -> uh_dport));
-    printf("udp length       : %d\n", htons(packet -> udp -> uh_ulen));
-    printf("checksum         : %x\n\n", htons(packet -> udp -> uh_sum));
 }
 
 // 省略
@@ -1233,8 +1234,6 @@ int Send(int soc){
     inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
 
     ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
-
-    packet.ip = &ip;
 
     // パケットの実態の生成
     GenerateEthernetPacket(&packet, &eh);
@@ -2145,7 +2144,7 @@ struct udphdr udp = {
 | version | 4 | IPv4 |
 | ihl | iphdrのサイズ / 4 | optionはなし |
 | tos | 0 | パケットの優先順位 |
-| tot_len | iphdrのサイズ | データがない、※ |
+| tot_len | sizeof(ip+udp+data) | 各サイズの和、※ |
 | id | ランダム | ※ |
 
 ※リトルエンディアン
@@ -3044,7 +3043,7 @@ AddData(&packet, data, sizeof(data));
 | version | 4 | IPv4 |
 | ihl | iphdrのサイズ / 4 | optionはなし |
 | tos | 0 | パケットの優先順位 |
-| tot_len | iphdrのサイズ | データがない、※ |
+| tot_len | sizeof(ip+tcp+data) | 各サイズの和、※ |
 
 ※リトルエンディアン
 
