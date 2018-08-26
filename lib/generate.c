@@ -56,5 +56,4 @@ void AddData(Packet *packet, unsigned char *data, size_t size) {
 
 void FreePacket(Packet *packet) {
     free(packet -> ptr);
-    memset(packet, 0, sizeof(Packet));
 }
