@@ -178,3 +178,16 @@ unsigned short  sum;
 	}
 }
 
+u_int16_t checksum3(struct iphdr *iphdr,unsigned char *data,int len)
+{
+struct pseudo_ip        p_ip;
+unsigned short  sum;
+
+        memset(&p_ip,0,sizeof(struct pseudo_ip));
+        p_ip.ip_src.s_addr=iphdr->saddr;
+        p_ip.ip_dst.s_addr=iphdr->daddr;
+        p_ip.ip_p=iphdr->protocol;
+        p_ip.ip_len=htons(len);
+
+        sum=checksum2((unsigned char *)&p_ip,sizeof(struct pseudo_ip),data,len);
+}

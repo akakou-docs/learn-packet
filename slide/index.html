@@ -232,7 +232,7 @@ ISOによって制定された。
 
 >>>
 ### 3. インターネット層
-ネットワーク同士の通信。  
+複数のネットワークを介した通信。  
 通信経路の選択（ルーティング）
 
 例： **IPv4**、IPv6、ARP
@@ -2892,6 +2892,9 @@ int Send(int soc){
     AddTCPHeader(&packet, &tcp);
     AddData(&packet, data, sizeof(data));
 
+     // チェックサム
+    int len = ntohs(packet.ip -> tot_len) - packet.ip -> ihl * 4;
+    tcp.check = checksum3(packet.ip, (unsigned char *)packet.tcp, len);
 
     // 表示
     printf("text:\n");
@@ -3046,6 +3049,11 @@ GenerateEthernetPacket(&packet, &eh);
 AddIPHeader(&packet, &ip);
 AddTCPHeader(&packet, &tcp);
 AddData(&packet, data, sizeof(data));
+
+ // チェックサム
+int len = ntohs(packet.ip -> tot_len) - packet.ip -> ihl * 4;
+tcp.check = checksum3(packet.ip, (unsigned char *)packet.tcp, len);
+
 
 ```
 
