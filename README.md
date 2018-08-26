@@ -4,6 +4,8 @@
 ## client
 
 ### ビルド
+`./client/bin` と `./server/bin` を作成し、 
+
 `./client` または `./server` に移動してから
 > make
 
