@@ -1291,9 +1291,9 @@ int Send(int soc){
 
 ### コード（パケットの作成）
 
-lib/generate.c
-
 ```c
+// lib/generate.c
+
 void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh) {
     size_t size = sizeof(struct ether_header);
     packet -> ptr = (unsigned char *)malloc(size);
@@ -1301,11 +1301,9 @@ void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh) {
     memcpy(packet -> eh, eh, sizeof(struct ether_header));
     packet -> size = sizeof(struct ether_header);
 }
-```
 
-lib/generate.h
+// lib/generate.h
 
-```c
 #define CarryProtocolHeader(headerType, packet, header) \
 { \
     size_t size = sizeof(struct headerType); \
@@ -2055,9 +2053,9 @@ int Send(int soc){
 
 ### コード（パケットの作成）
 
+```c
 lib/generate.c
 
-```c
 void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh) {
     size_t size = sizeof(struct ether_header);
     packet -> ptr = (unsigned char *)malloc(size);
@@ -2065,11 +2063,9 @@ void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh) {
     memcpy(packet -> eh, eh, sizeof(struct ether_header));
     packet -> size = sizeof(struct ether_header);
 }
-```
 
-lib/generate.h
+// lib/generate.h
 
-```c
 #define CarryProtocolHeader(headerType, packet, header) \
 { \
     size_t size = sizeof(struct headerType); \
@@ -2930,9 +2926,10 @@ int Send(int soc){
 
 ### コード（パケットの作成）
 
-lib/generate.c
 
 ```c
+// lib/generate.c
+
 void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh) {
     size_t size = sizeof(struct ether_header);
     packet -> ptr = (unsigned char *)malloc(size);
@@ -2948,11 +2945,9 @@ void CarryData(Packet *packet, unsigned char *data, size_t size) {
     memcpy(packet -> data, data, size);
     packet -> size = size + packet -> size;
 }
-```
 
-lib/generate.h
+// lib/generate.h
 
-```c
 #define CarryProtocolHeader(headerType, packet, header) \
 { \
     size_t size = sizeof(struct headerType); \
