@@ -8,7 +8,7 @@ SOURCE_NAMES  = $(subst $(SRCDIR)/,,$(SOURCES))
 TARGETDIR     = ./bin
 
 all:
-	$(foreach NAME,$(SOURCE_NAMES),$(COMPILER) $(CFLAG) $(SRCDIR)/$(NAME) $(LIBRARIES) -o $(TARGETDIR)/$(NAME:.c=);)
+	mkdir -p $(TARGETDIR); $(foreach NAME,$(SOURCE_NAMES),$(COMPILER) $(CFLAG) $(SRCDIR)/$(NAME) $(LIBRARIES) -o $(TARGETDIR)/$(NAME:.c=);)
 
 clean:
 	rm -rf $(TARGETDIR)/*
