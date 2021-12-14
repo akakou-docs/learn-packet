@@ -687,7 +687,7 @@ int Send(int soc){
     sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
     eh.ether_type = (u_int16_t)8;
 
-    GenerateEthernetPacket(&packet, &eh);
+    InitBaseEthernetPacket(&packet, &eh);
 
     PrintEthernet(&packet);
     PrintRawPacket(&packet);
@@ -716,7 +716,7 @@ ether_headerをヒープに移動します。
 lib/generate.c
 
 ```c
-void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
+void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh) {
     size_t size = sizeof(struct ether_header);
     packet -> ptr = (unsigned char *)malloc(size);
     packet -> eh = (struct ether_header *)packet -> ptr;
@@ -1262,8 +1262,8 @@ int Send(int soc){
     ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
     // パケットの実態の生成
-    GenerateEthernetPacket(&packet, &eh);
-    AddIPHeader(&packet, &ip);
+    InitBaseEthernetPacket(&packet, &eh);
+    CarryProtocolHeader(iphdr, packet, ip);
 
     // パケットの表示
     PrintEthernet(&packet);
@@ -1294,21 +1294,26 @@ int Send(int soc){
 lib/generate.c
 
 ```c
-void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
+void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh) {
     size_t size = sizeof(struct ether_header);
     packet -> ptr = (unsigned char *)malloc(size);
     packet -> eh = (struct ether_header *)packet -> ptr;
     memcpy(packet -> eh, eh, sizeof(struct ether_header));
     packet -> size = sizeof(struct ether_header);
 }
+```
 
-void AddIPHeader(Packet *packet, struct iphdr *ip) {
-    size_t size = sizeof(struct iphdr);
-    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
-    packet -> ip = (struct iphdr *)(packet -> ptr + packet -> size);
-    memcpy(packet -> ip, ip, sizeof(struct iphdr));
-    packet -> size = size + packet -> size;
-}
+lib/generate.h
+
+```c
+#define CarryProtocolHeader(headerType, packet, header) \
+{ \
+    size_t size = sizeof(struct headerType); \
+    packet.ptr = (unsigned char *)realloc(packet.ptr, packet.size + size);\
+    packet.header = (struct headerType *)(packet.ptr + packet.size); \
+    memcpy(packet.header, &header, sizeof(struct headerType)); \
+    packet.size = size + packet.size; \
+} \
 ```
 
 >>>
@@ -1360,8 +1365,8 @@ inet_pton(AF_INET, "127.0.0.1", &(ip.daddr));
 ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
 // パケットの実態の生成
-GenerateEthernetPacket(&packet, &eh);
-AddIPHeader(&packet, &ip);
+InitBaseEthernetPacket(&packet, &eh);
+CarryProtocolHeader(iphdr, packet, ip);
 
 ```
 
@@ -2013,10 +2018,10 @@ int Send(int soc){
     };
 
     // 実体の生成
-    GenerateEthernetPacket(&packet, &eh);
-    AddIPHeader(&packet, &ip);
-    AddUDPHeader(&packet, &udp);
-    AddData(&packet, data, sizeof(data));
+    InitBaseEthernetPacket(&packet, &eh);
+    CarryProtocolHeader(iphdr, packet, ip);
+    CarryProtocolHeader(udphdr, packet, udp);
+    CarryData(&packet, data, sizeof(data));
 
     // 表示
     printf("text:\n");
@@ -2053,29 +2058,26 @@ int Send(int soc){
 lib/generate.c
 
 ```c
-void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
+void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh) {
     size_t size = sizeof(struct ether_header);
     packet -> ptr = (unsigned char *)malloc(size);
     packet -> eh = (struct ether_header *)packet -> ptr;
     memcpy(packet -> eh, eh, sizeof(struct ether_header));
     packet -> size = sizeof(struct ether_header);
 }
+```
 
-void AddIPHeader(Packet *packet, struct iphdr *ip) {
-    size_t size = sizeof(struct iphdr);
-    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
-    packet -> ip = (struct iphdr *)(packet -> ptr + packet -> size);
-    memcpy(packet -> ip, ip, sizeof(struct iphdr));
-    packet -> size = size + packet -> size;
-}
+lib/generate.h
 
-void AddUDPHeader(Packet *packet, struct udphdr *udp) {
-    size_t size = sizeof(struct udphdr);
-    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
-    packet -> udp = (struct udphdr *)(packet -> ptr + packet -> size);
-    memcpy(packet -> udp, udp, sizeof(struct udphdr));
-    packet -> size = size + packet -> size;
-}
+```c
+#define CarryProtocolHeader(headerType, packet, header) \
+{ \
+    size_t size = sizeof(struct headerType); \
+    packet.ptr = (unsigned char *)realloc(packet.ptr, packet.size + size);\
+    packet.header = (struct headerType *)(packet.ptr + packet.size); \
+    memcpy(packet.header, &header, sizeof(struct headerType)); \
+    packet.size = size + packet.size; \
+} \
 ```
 
 >>>
@@ -2887,10 +2889,10 @@ int Send(int soc){
 
 
     // 実体の生成
-    GenerateEthernetPacket(&packet, &eh);
-    AddIPHeader(&packet, &ip);
-    AddTCPHeader(&packet, &tcp);
-    AddData(&packet, data, sizeof(data));
+    InitBaseEthernetPacket(&packet, &eh);
+    CarryProtocolHeader(iphdr, packet, ip);
+    CarryProtocolHeader(tcphdr, packet, tcp);
+    CarryData(&packet, data, sizeof(data));
 
      // チェックサム
     int len = ntohs(packet.ip -> tot_len) - packet.ip -> ihl * 4;
@@ -2931,7 +2933,7 @@ int Send(int soc){
 lib/generate.c
 
 ```c
-void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
+void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh) {
     size_t size = sizeof(struct ether_header);
     packet -> ptr = (unsigned char *)malloc(size);
     packet -> eh = (struct ether_header *)packet -> ptr;
@@ -2939,31 +2941,28 @@ void GenerateEthernetPacket(Packet *packet, struct ether_header *eh) {
     packet -> size = sizeof(struct ether_header);
 }
 
-void AddIPHeader(Packet *packet, struct iphdr *ip) {
-    size_t size = sizeof(struct iphdr);
-    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
-    packet -> ip = (struct iphdr *)(packet -> ptr + packet -> size);
-    memcpy(packet -> ip, ip, sizeof(struct iphdr));
-    packet -> size = size + packet -> size;
-}
-
-void AddTCPHeader(Packet *packet, struct tcphdr *tcp) {
-    size_t size = sizeof(struct tcphdr);
-    packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
-    packet -> tcp = (struct tcphdr *)(packet -> ptr + packet -> size);
-    memcpy(packet -> tcp, tcp, sizeof(struct tcphdr));
-    packet -> size = size + packet -> size;
-}
-
-void AddData(Packet *packet, unsigned char *data, size_t size) {
+void CarryData(Packet *packet, unsigned char *data, size_t size) {
     packet -> ptr = (unsigned char *)realloc(packet -> ptr, packet -> size + size);
     packet -> data = (unsigned char *)(packet -> ptr + packet -> size);
     packet -> data_size = size;
     memcpy(packet -> data, data, size);
     packet -> size = size + packet -> size;
 }
-
 ```
+
+lib/generate.h
+
+```c
+#define CarryProtocolHeader(headerType, packet, header) \
+{ \
+    size_t size = sizeof(struct headerType); \
+    packet.ptr = (unsigned char *)realloc(packet.ptr, packet.size + size);\
+    packet.header = (struct headerType *)(packet.ptr + packet.size); \
+    memcpy(packet.header, &header, sizeof(struct headerType)); \
+    packet.size = size + packet.size; \
+} \
+```
+
 
 >>>
 
@@ -3045,10 +3044,10 @@ struct tcphdr tcp = {
 
 
 // 実体の生成
-GenerateEthernetPacket(&packet, &eh);
-AddIPHeader(&packet, &ip);
-AddTCPHeader(&packet, &tcp);
-AddData(&packet, data, sizeof(data));
+InitBaseEthernetPacket(&packet, &eh);
+CarryProtocolHeader(iphdr, packet, ip);
+CarryProtocolHeader(tcphdr, packet, tcp);
+CarryData(&packet, data, sizeof(data));
 
  // チェックサム
 int len = ntohs(packet.ip -> tot_len) - packet.ip -> ihl * 4;
