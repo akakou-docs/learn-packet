@@ -56,8 +56,8 @@ int Send(int soc){
     ip.check = checksum2((unsigned char *)&ip, sizeof(struct iphdr), NULL, 0);
 
     // パケットの実態の生成
-    GenerateEthernetPacket(&packet, &eh);
-    AddIPHeader(&packet, &ip);
+    InitBaseEthernetPacket(&packet, &eh);
+    CarryProtocolHeader(iphdr, packet, ip);
 
     // パケットの表示
     PrintEthernet(&packet);

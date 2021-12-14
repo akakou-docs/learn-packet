@@ -71,10 +71,10 @@ int Send(int soc){
     };
 
     // 実体の生成
-    GenerateEthernetPacket(&packet, &eh);
-    AddIPHeader(&packet, &ip);
-    AddUDPHeader(&packet, &udp);
-    AddData(&packet, data, sizeof(data));
+    InitBaseEthernetPacket(&packet, &eh);
+    CarryProtocolHeader(iphdr, packet, ip);
+    CarryProtocolHeader(udphdr, packet, udp);
+    CarryData(&packet, data, sizeof(data));
 
     // 表示
     printf("text:\n");

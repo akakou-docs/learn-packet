@@ -82,10 +82,10 @@ int Send(int soc){
      };
 
     // 実体の生成
-    GenerateEthernetPacket(&packet, &eh);
-    AddIPHeader(&packet, &ip);
-    AddTCPHeader(&packet, &tcp);
-    AddData(&packet, data, sizeof(data));
+    InitBaseEthernetPacket(&packet, &eh);
+    CarryProtocolHeader(iphdr, packet, ip);
+    CarryProtocolHeader(tcphdr, packet, tcp);
+    CarryData(&packet, data, sizeof(data));
 
      // チェックサム
     int len = ntohs(packet.ip -> tot_len) - packet.ip -> ihl * 4;

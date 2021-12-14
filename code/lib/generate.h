@@ -7,10 +7,15 @@
 #include <netinet/udp.h>
 #include <netpacket/packet.h>
 
+#define CarryProtocolHeader(headerType, packet, header) \
+    { \
+        size_t size = sizeof(struct headerType); \
+        packet.ptr = (unsigned char *)realloc(packet.ptr, packet.size + size);\
+        packet.header = (struct headerType *)(packet.ptr + packet.size); \
+        memcpy(packet.header, &header, sizeof(struct headerType)); \
+        packet.size = size + packet.size; \
+    } \
 
-void GenerateEthernetPacket(Packet *packet, struct ether_header *eh);
-void AddIPHeader(Packet *packet, struct iphdr *ip);
-void AddUDPHeader(Packet *packet, struct udphdr *udp);
-void AddTCPHeader(Packet *packet, struct tcphdr *tcp);
-void AddData(Packet *packet, unsigned char *data, size_t size);
+void InitBaseEthernetPacket(Packet *packet, struct ether_header *eh);
+void CarryData(Packet *packet, unsigned char *data, size_t size);
 void FreePacket(Packet *packet);

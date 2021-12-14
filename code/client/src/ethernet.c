@@ -26,7 +26,7 @@ int Send(int soc){
     sprintf(eh.ether_shost, "\x00\x00\x00\x00\x00\x00");
     eh.ether_type = (u_int16_t)8;
 
-    GenerateEthernetPacket(&packet, &eh);
+    InitBaseEthernetPacket(&packet, &eh);
 
     PrintEthernet(&packet);
     PrintRawPacket(&packet);
