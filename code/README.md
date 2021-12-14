@@ -3,12 +3,6 @@
 ## 環境
 Linux
 
-## 準備
-```sh
-mkdir client/bin                                                                                                                          
-mkdir server/bin                                                                                                                          
-```
-
 ## ビルド
 ```sh
 cd client && make                                                                                                                         
